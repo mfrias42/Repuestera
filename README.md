@@ -1,87 +1,97 @@
-# Repuestera - Sistema Completo de E-commerce
+# Sistema de Gestión para Repuestera - Full Stack
 
-Sistema completo de e-commerce para repuestos automotrices que incluye backend API REST y frontend React.js. Este proyecto proporciona una solución integral para gestionar productos, usuarios, administradores y autenticación.
+Un sistema completo de gestión para una repuestera que incluye frontend en React y backend en Node.js con manejo de productos, categorías, usuarios, administradores y carrito de compras.
 
 ## 🚀 Características
 
-- **Gestión de Productos**: CRUD completo con soporte para imágenes, categorías y filtros avanzados
-- **Sistema de Usuarios**: Registro, login y gestión de perfiles de clientes
-- **Panel de Administración**: Sistema de roles para administradores con diferentes permisos
-- **Autenticación JWT**: Seguridad robusta con tokens de acceso
-- **Carga de Imágenes**: Soporte para subida y gestión de imágenes de productos
-- **Base de Datos MySQL**: Esquema optimizado con relaciones y índices
-- **Validaciones**: Validación exhaustiva de datos de entrada
-- **Middleware de Seguridad**: Rate limiting, CORS, helmet y más
+### Frontend (React)
+- **Interfaz moderna**: Material-UI con diseño responsive
+- **Carrito de compras**: Funcionalidad completa con persistencia
+- **Autenticación**: Login/registro con contexto global
+- **Gestión de productos**: Visualización, filtros y búsqueda
+- **Panel de administración**: Gestión completa del sistema
+
+### Backend (Node.js/Express)
+- **API RESTful**: Endpoints bien documentados
+- **Gestión de Productos**: CRUD completo con imágenes
+- **Sistema de Categorías**: Organización de productos
+- **Autenticación JWT**: Seguridad robusta
+- **Base de Datos**: MySQL con relaciones optimizadas
+- **Seguridad**: Rate limiting, validaciones, CORS
 
 ## 📋 Requisitos Previos
 
-- Node.js (v14 o superior)
+- Node.js (v16 o superior)
 - MySQL (v8.0 o superior)
 - npm o yarn
 
 ## 🛠️ Instalación
 
 1. **Clonar el repositorio**
-   ```bash
-   git clone <url-del-repositorio>
-   cd Repuestera
-   ```
+```bash
+git clone <url-del-repositorio>
+cd repuestera
+```
 
-2. **Instalar dependencias**
-   ```bash
-   npm install
-   ```
+2. **Instalar dependencias para todo el proyecto**
+```bash
+npm install
+npm run install:all
+```
 
-3. **Configurar variables de entorno**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Editar el archivo `.env` con tus configuraciones:
-   ```env
-   # Servidor
-   PORT=3000
-   NODE_ENV=development
-   
-   # Base de datos MySQL
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_NAME=repuestera_db
-   DB_USER=tu_usuario
-   DB_PASSWORD=tu_password
-   
-   # JWT
-   JWT_SECRET=tu_jwt_secret_muy_seguro
-   JWT_EXPIRES_IN=24h
-   
-   # Archivos
-   UPLOAD_PATH=uploads/products
-   MAX_FILE_SIZE=5242880
-   ```
+3. **Configurar variables de entorno del backend**
+```bash
+cd backend
+cp .env.example .env
+```
 
-4. **Inicializar la base de datos**
-   ```bash
-   npm run init-db
-   ```
+Editar el archivo `backend/.env` con tus configuraciones:
+```env
+# Configuración del servidor
+PORT=8000
+NODE_ENV=development
 
-5. **Configurar y ejecutar el frontend**
-   ```bash
-   cd frontend
-   npm install
-   npm start
-   ```
-   El frontend estará disponible en `http://localhost:3000`
+# Configuración de la base de datos MySQL
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=repuestera_db
+DB_USER=tu_usuario
+DB_PASSWORD=tu_contraseña
 
-6. **Iniciar el servidor backend**
-   ```bash
-   # En el directorio raíz del proyecto
-   # Desarrollo
-   npm run dev
-   
-   # Producción
-   npm start
-   ```
-   El backend estará disponible en `http://localhost:3000/api`
+# JWT Secret
+JWT_SECRET=tu_jwt_secret_muy_seguro_aqui
+JWT_EXPIRES_IN=24h
+
+# Configuración de archivos
+UPLOAD_PATH=uploads/
+MAX_FILE_SIZE=5242880
+```
+
+4. **Configurar la base de datos**
+```bash
+# Crear la base de datos
+mysql -u root -p
+CREATE DATABASE repuestera_db;
+
+# Ejecutar el script de inicialización
+cd backend
+npm run init-db
+```
+
+5. **Iniciar el proyecto completo**
+```bash
+# Desde la raíz del proyecto
+npm run dev  # Inicia backend y frontend simultáneamente
+```
+
+O iniciar por separado:
+```bash
+# Backend (puerto 8000)
+npm run backend:dev
+
+# Frontend (puerto 3000)
+npm run frontend:dev
+```
 
 ## 📁 Estructura del Proyecto
 
