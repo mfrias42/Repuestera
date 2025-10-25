@@ -12,11 +12,14 @@ const userRoutes = require('./routes/users');
 // Inicializar base de datos
 const { testConnection } = require('./config/database');
 
-// Si estamos en Azure (qa o production), inicializar SQLite
-if (process.env.NODE_ENV === 'qa' || process.env.NODE_ENV === 'production') {
-  const { initializeTables } = require('./config/database-sqlite');
-  initializeTables().catch(console.error);
-}
+// Probar conexión a MySQL al iniciar
+testConnection().then(success => {
+  if (success) {
+    console.log('✅ Base de datos MySQL conectada correctamente');
+  } else {
+    console.error('❌ Error conectando a la base de datos MySQL');
+  }
+}).catch(console.error);
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -31,7 +34,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// CORS
+// CORS - Configuración mejorada
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
@@ -39,10 +42,26 @@ const allowedOrigins = [
   'https://repuestera-web-mfrias.azurewebsites.net'
 ];
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+// Función para validar origen
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como Postman, aplicaciones móviles, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Verificar si el origin está en la lista permitida
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log(`❌ CORS: Origen no permitido: ${origin}`);
+      callback(new Error('No permitido por CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
+app.use(cors(corsOptions));
 
 // Middleware para parsing
 app.use(express.json({ limit: '10mb' }));
@@ -56,13 +75,27 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 
-// Ruta de prueba
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Servidor funcionando correctamente',
-    timestamp: new Date().toISOString()
-  });
+// Ruta de prueba con verificación de base de datos
+app.get('/api/health', async (req, res) => {
+  try {
+    const dbStatus = await testConnection();
+    res.json({ 
+      status: 'OK', 
+      message: 'Servidor funcionando correctamente',
+      database: dbStatus ? 'Conectada' : 'Desconectada',
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error en health check:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Error en el servidor',
+      database: 'Error de conexión',
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Manejo de errores 404

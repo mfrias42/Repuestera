@@ -76,6 +76,11 @@ router.get('/',
   handleValidationErrors,
   async (req, res) => {
     try {
+      console.log('📦 Solicitud de productos recibida:', {
+        query: req.query,
+        headers: req.headers.origin || 'Sin origin'
+      });
+
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 20;
       const offset = (page - 1) * limit;
@@ -92,10 +97,14 @@ router.get('/',
         inStock: req.query.in_stock !== undefined ? req.query.in_stock === 'true' : null
       };
 
+      console.log('📦 Opciones de búsqueda:', options);
+
       const [products, total] = await Promise.all([
         Product.findAll(options),
         Product.count(options)
       ]);
+
+      console.log(`📦 Productos encontrados: ${products.length} de ${total} total`);
 
       const totalPages = Math.ceil(total / limit);
 
@@ -121,7 +130,12 @@ router.get('/',
       });
 
     } catch (error) {
-      console.error('Error obteniendo productos:', error);
+      console.error('❌ Error detallado obteniendo productos:', {
+        message: error.message,
+        stack: error.stack,
+        query: req.query,
+        origin: req.headers.origin
+      });
       res.status(500).json({
         error: 'Error interno del servidor',
         message: 'No se pudieron obtener los productos'

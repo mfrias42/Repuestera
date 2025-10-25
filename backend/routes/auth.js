@@ -163,19 +163,29 @@ router.post('/login', loginValidation, handleValidationErrors, async (req, res) 
 router.post('/admin/login', loginValidation, handleValidationErrors, async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(`🔐 Intento de login admin: ${email}`);
 
     // Buscar administrador
+    console.log('📋 Buscando administrador en la base de datos...');
     const admin = await Admin.findByEmail(email);
+    
     if (!admin) {
+      console.log(`❌ Admin no encontrado: ${email}`);
       return res.status(401).json({
         error: 'Credenciales inválidas',
         message: 'Email o contraseña incorrectos'
       });
     }
+    
+    console.log(`✅ Admin encontrado: ${admin.email}, ID: ${admin.id}, Activo: ${admin.activo}`);
 
     // Verificar contraseña
+    console.log('🔑 Verificando contraseña...');
     const isValidPassword = await admin.verifyPassword(password);
+    console.log(`🔑 Resultado verificación contraseña: ${isValidPassword}`);
+    
     if (!isValidPassword) {
+      console.log(`❌ Contraseña incorrecta para: ${email}`);
       return res.status(401).json({
         error: 'Credenciales inválidas',
         message: 'Email o contraseña incorrectos'
@@ -183,11 +193,16 @@ router.post('/admin/login', loginValidation, handleValidationErrors, async (req,
     }
 
     // Actualizar último acceso
+    console.log('📅 Actualizando último acceso...');
     await admin.updateLastAccess();
+    console.log('✅ Último acceso actualizado');
 
     // Generar token
+    console.log('🎫 Generando token...');
     const token = generateAdminToken(admin);
+    console.log('✅ Token generado exitosamente');
 
+    console.log(`✅ Login admin exitoso: ${email}`);
     res.json({
       message: 'Inicio de sesión administrativo exitoso',
       admin: admin.toJSON(),
@@ -196,7 +211,11 @@ router.post('/admin/login', loginValidation, handleValidationErrors, async (req,
     });
 
   } catch (error) {
-    console.error('Error en login admin:', error);
+    console.error('❌ Error detallado en login admin:', {
+      message: error.message,
+      stack: error.stack,
+      email: req.body?.email
+    });
     res.status(500).json({
       error: 'Error interno del servidor',
       message: 'No se pudo completar el inicio de sesión'
@@ -439,6 +458,55 @@ router.get('/debug-db', async (req, res) => {
 
   } catch (error) {
     console.error('Error en debug:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+});
+
+// Endpoint temporal para verificar y corregir contraseña del admin
+router.post('/fix-admin-password', async (req, res) => {
+  try {
+    const { executeQuery } = require('../config/database');
+    const bcrypt = require('bcryptjs');
+    
+    // Buscar el administrador
+    const admin = await Admin.findByEmail('admin@repuestera.com');
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Administrador no encontrado'
+      });
+    }
+
+    // Verificar si la contraseña actual funciona
+    const currentPasswordWorks = await admin.verifyPassword('admin123');
+    
+    if (currentPasswordWorks) {
+      return res.json({
+        success: true,
+        message: 'La contraseña ya funciona correctamente',
+        passwordFixed: false
+      });
+    }
+
+    // Si no funciona, actualizar la contraseña
+    const hashedPassword = await bcrypt.hash('admin123', 12);
+    await executeQuery(
+      'UPDATE administradores SET password = ? WHERE email = ?',
+      [hashedPassword, 'admin@repuestera.com']
+    );
+
+    res.json({
+      success: true,
+      message: 'Contraseña del administrador actualizada',
+      passwordFixed: true
+    });
+
+  } catch (error) {
+    console.error('Error corrigiendo contraseña:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor',

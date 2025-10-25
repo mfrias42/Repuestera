@@ -1,36 +1,30 @@
 require('dotenv').config();
+const mysql = require('mysql2/promise');
 
-// Determinar si usar SQLite (Azure) o MySQL (local)
-const usesSQLite = process.env.NODE_ENV === 'qa' || process.env.NODE_ENV === 'production' || process.env.USE_SQLITE === 'true';
+// Configuración de MySQL para todos los entornos
+console.log('🗄️ Usando MySQL para todos los entornos');
 
-let dbModule;
+const dbConfig = {
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'repuestera_db',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  acquireTimeout: 60000,
+  timeout: 60000,
+  reconnect: true,
+  ssl: process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'qa' ? {
+    rejectUnauthorized: false
+  } : false
+};
 
-if (usesSQLite) {
-  console.log('🗄️ Usando SQLite para Azure');
-  dbModule = require('./database-sqlite');
-} else {
-  console.log('🗄️ Usando MySQL para desarrollo local');
-  const mysql = require('mysql2/promise');
-  
-  const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'repuestera_db',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    acquireTimeout: 60000,
-    timeout: 60000,
-    reconnect: true
-  };
+console.log(`📊 Conectando a MySQL: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
 
-  // Crear pool de conexiones
-  const pool = mysql.createPool(dbConfig);
-  
-  dbModule = { pool };
-}
+// Crear pool de conexiones
+const pool = mysql.createPool(dbConfig);
 
 // Función para probar la conexión
 async function testConnection() {
@@ -137,7 +131,7 @@ async function executeTransaction(queries) {
 }
 
 module.exports = {
-  pool: dbModule.pool,
+  pool,
   testConnection,
   executeQuery,
   executeTransaction
