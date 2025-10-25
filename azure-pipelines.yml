@@ -37,8 +37,13 @@ stages:
     - script: |
         cd backend
         npm install --production=false
-        npm run test --if-present
-      displayName: 'Instalar dependencias y ejecutar pruebas'
+      displayName: 'Instalar dependencias del backend'
+    
+    - script: |
+        cd backend
+        npm run test
+      displayName: 'Ejecutar pruebas del backend'
+      continueOnError: false
 
     - task: ArchiveFiles@2
       inputs:

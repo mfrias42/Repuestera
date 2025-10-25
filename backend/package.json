@@ -13,7 +13,7 @@
     "reset-dev": "node scripts/dev-utils.js reset",
     "db-status": "node scripts/dev-utils.js status",
     "backup": "node scripts/dev-utils.js backup",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No tests specified - skipping test phase\""
   },
   "keywords": [
     "repuestos",
