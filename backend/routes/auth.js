@@ -370,4 +370,45 @@ router.get('/verify', verifyToken, (req, res) => {
   });
 });
 
+// Endpoint temporal para crear administrador (solo para debugging)
+router.post('/create-admin-temp', async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    
+    // Verificar si ya existe el administrador
+    const existingAdmin = await Admin.findByEmail('admin@repuestera.com');
+    if (existingAdmin) {
+      return res.json({
+        success: true,
+        message: 'El administrador ya existe',
+        admin: { email: existingAdmin.email }
+      });
+    }
+
+    // Crear el administrador
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const adminData = {
+      nombre: 'Administrador',
+      apellido: 'Sistema',
+      email: 'admin@repuestera.com',
+      password: hashedPassword
+    };
+
+    const adminId = await Admin.create(adminData);
+    
+    res.json({
+      success: true,
+      message: 'Administrador creado exitosamente',
+      adminId: adminId
+    });
+  } catch (error) {
+    console.error('Error creando administrador:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;
