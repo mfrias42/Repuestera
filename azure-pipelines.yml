@@ -15,14 +15,14 @@ variables:
   nodeVersion: '20.x'
   
   # Variables QA
-  webAppNameBackendQA: 'repuestera-api-mfrias-qa'
-  webAppNameFrontendQA: 'repuestera-web-mfrias-qa'
-  apiUrlQA: 'https://repuestera-api-mfrias-qa.azurewebsites.net/api'
+  webAppNameBackendQA: 'repuestera-mfrias-qa-api'
+  webAppNameFrontendQA: 'repuestera-mfrias-qa-web'
+  apiUrlQA: 'https://repuestera-mfrias-qa-api.azurewebsites.net/api'
   
-  # Variables Producción
-  webAppNameBackendProd: 'repuestera-api-mfrias'
-  webAppNameFrontendProd: 'repuestera-web-mfrias'
-  apiUrlProd: 'https://repuestera-api-mfrias.azurewebsites.net/api'
+  # Variables Producción (recursos existentes)
+  webAppNameBackendProd: 'repuestera-mfrias-api'
+  webAppNameFrontendProd: 'repuestera-mfrias-web'
+  apiUrlProd: 'https://repuestera-mfrias-api.azurewebsites.net/api'
 
 stages:
 - stage: Build
