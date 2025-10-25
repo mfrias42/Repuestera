@@ -7,7 +7,7 @@ async function initProdDatabase() {
   try {
     // Configuración para Producción en Azure MySQL
     connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'repuestera-server-mfrias.mysql.database.azure.com',
+      host: process.env.DB_HOST || 'repuestera-mfrias-server.mysql.database.azure.com',
       port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER || 'prod_admin',
       password: process.env.DB_PASSWORD || 'Prod_SecurePass2024!',

@@ -37,13 +37,28 @@
       "metadata": {
         "description": "Versión de Node.js"
       }
+    },
+    "mysqlAdminLogin": {
+      "type": "string",
+      "defaultValue": "repuestera_admin",
+      "metadata": {
+        "description": "Nombre de usuario administrador de MySQL"
+      }
+    },
+    "mysqlAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Contraseña del administrador de MySQL"
+      }
     }
   },
   "variables": {
     "appServicePlanNameQA": "[concat(parameters('appNamePrefix'), '-plan-qa')]",
     "backendAppNameQA": "[concat(parameters('appNamePrefix'), '-api-qa')]",
     "frontendAppNameQA": "[concat(parameters('appNamePrefix'), '-web-qa')]",
-    "applicationInsightsNameQA": "[concat(parameters('appNamePrefix'), '-insights-qa')]"
+    "applicationInsightsNameQA": "[concat(parameters('appNamePrefix'), '-insights-qa')]",
+    "mysqlServerNameQA": "[concat(parameters('appNamePrefix'), '-qa-server')]",
+    "mysqlDatabaseNameQA": "repuestera_qa"
   },
   "resources": [
     {
@@ -71,13 +86,66 @@
       }
     },
     {
+      "type": "Microsoft.DBforMySQL/flexibleServers",
+      "apiVersion": "2021-12-01-preview",
+      "name": "[variables('mysqlServerNameQA')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_B1ms",
+        "tier": "Burstable"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('mysqlAdminLogin')]",
+        "administratorLoginPassword": "[parameters('mysqlAdminPassword')]",
+        "version": "8.0.21",
+        "storage": {
+          "storageSizeGB": 20,
+          "iops": 360,
+          "autoGrow": "Enabled"
+        },
+        "backup": {
+          "backupRetentionDays": 7,
+          "geoRedundantBackup": "Disabled"
+        },
+        "highAvailability": {
+          "mode": "Disabled"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DBforMySQL/flexibleServers/databases",
+      "apiVersion": "2021-12-01-preview",
+      "name": "[concat(variables('mysqlServerNameQA'), '/', variables('mysqlDatabaseNameQA'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforMySQL/flexibleServers', variables('mysqlServerNameQA'))]"
+      ],
+      "properties": {
+        "charset": "utf8",
+        "collation": "utf8_general_ci"
+      }
+    },
+    {
+      "type": "Microsoft.DBforMySQL/flexibleServers/firewallRules",
+      "apiVersion": "2021-12-01-preview",
+      "name": "[concat(variables('mysqlServerNameQA'), '/AllowAzureServices')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforMySQL/flexibleServers', variables('mysqlServerNameQA'))]"
+      ],
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      }
+    },
+    {
       "type": "Microsoft.Web/sites",
       "apiVersion": "2021-02-01",
       "name": "[variables('backendAppNameQA')]",
       "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanNameQA'))]",
-        "[resourceId('Microsoft.Insights/components', variables('applicationInsightsNameQA'))]"
+        "[resourceId('Microsoft.Insights/components', variables('applicationInsightsNameQA'))]",
+        "[resourceId('Microsoft.DBforMySQL/flexibleServers', variables('mysqlServerNameQA'))]",
+        "[resourceId('Microsoft.DBforMySQL/flexibleServers/databases', variables('mysqlServerNameQA'), variables('mysqlDatabaseNameQA'))]"
       ],
       "kind": "app,linux",
       "properties": {
@@ -108,6 +176,26 @@
             {
               "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
               "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsNameQA'))).ConnectionString]"
+            },
+            {
+              "name": "DB_HOST",
+              "value": "[concat(variables('mysqlServerNameQA'), '.mysql.database.azure.com')]"
+            },
+            {
+              "name": "DB_USER",
+              "value": "[parameters('mysqlAdminLogin')]"
+            },
+            {
+              "name": "DB_PASSWORD",
+              "value": "[parameters('mysqlAdminPassword')]"
+            },
+            {
+              "name": "DB_NAME",
+              "value": "[variables('mysqlDatabaseNameQA')]"
+            },
+            {
+              "name": "DB_PORT",
+              "value": "3306"
             }
           ],
           "cors": {
@@ -177,6 +265,18 @@
     "resourceGroupName": {
       "type": "string",
       "value": "[resourceGroup().name]"
+    },
+    "mysqlServerNameQA": {
+      "type": "string",
+      "value": "[variables('mysqlServerNameQA')]"
+    },
+    "mysqlServerFqdnQA": {
+      "type": "string",
+      "value": "[concat(variables('mysqlServerNameQA'), '.mysql.database.azure.com')]"
+    },
+    "mysqlDatabaseNameQA": {
+      "type": "string",
+      "value": "[variables('mysqlDatabaseNameQA')]"
     }
   }
 }
