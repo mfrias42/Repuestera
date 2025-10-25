@@ -66,8 +66,8 @@ stages:
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del backend'
 
-  - job: BuildFrontend
-    displayName: 'Construir Frontend'
+  - job: BuildFrontendQA
+    displayName: 'Construir Frontend para QA'
     pool:
       vmImage: 'ubuntu-latest'
     
@@ -80,11 +80,10 @@ stages:
     - script: |
         cd frontend
         npm install
-        # Build genérico - las variables específicas se configuran en cada ambiente
         npm run build
-      displayName: 'Instalar dependencias y construir'
+      displayName: 'Instalar dependencias y construir para QA'
       env:
-        REACT_APP_API_URL: 'PLACEHOLDER_WILL_BE_REPLACED'
+        REACT_APP_API_URL: $(apiUrlQA)
         NODE_ENV: 'production'
 
     - task: ArchiveFiles@2
@@ -92,16 +91,52 @@ stages:
         rootFolderOrFile: 'frontend/build'
         includeRootFolder: false
         archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/frontend.zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/frontend-qa.zip'
         replaceExistingArchive: true
-      displayName: 'Comprimir build del frontend'
+      displayName: 'Comprimir build del frontend QA'
 
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)/frontend.zip'
-        ArtifactName: 'frontend-drop'
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/frontend-qa.zip'
+        ArtifactName: 'frontend-qa-drop'
         publishLocation: 'Container'
-      displayName: 'Publicar artefacto del frontend'
+      displayName: 'Publicar artefacto del frontend QA'
+
+  - job: BuildFrontendProd
+    displayName: 'Construir Frontend para Producción'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: $(nodeVersion)
+      displayName: 'Instalar Node.js $(nodeVersion)'
+
+    - script: |
+        cd frontend
+        npm install
+        npm run build
+      displayName: 'Instalar dependencias y construir para Producción'
+      env:
+        REACT_APP_API_URL: $(apiUrlProd)
+        NODE_ENV: 'production'
+
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: 'frontend/build'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/frontend-prod.zip'
+        replaceExistingArchive: true
+      displayName: 'Comprimir build del frontend Producción'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/frontend-prod.zip'
+        ArtifactName: 'frontend-prod-drop'
+        publishLocation: 'Container'
+      displayName: 'Publicar artefacto del frontend Producción'
 
 # ============================================================================
 # STAGE QA - Despliegue Automático para Testing
@@ -211,8 +246,8 @@ stages:
         deploy:
           steps:
           - download: current
-            artifact: frontend-drop
-            displayName: 'Download Frontend Artifact'
+            artifact: frontend-qa-drop
+            displayName: 'Download Frontend QA Artifact'
             
           - task: AzureWebApp@1
             inputs:
@@ -220,7 +255,7 @@ stages:
               appType: 'webAppLinux'
               appName: $(webAppNameFrontendQA)
               resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/frontend-drop/frontend.zip'
+              package: '$(Pipeline.Workspace)/frontend-qa-drop/frontend-qa.zip'
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npx serve -s . -l 8080'
             displayName: 'Deploy Frontend to QA'
@@ -240,11 +275,6 @@ stages:
                   {
                     "name": "PORT",
                     "value": "8080",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "REACT_APP_API_URL",
-                    "value": "$(apiUrlQA)",
                     "slotSetting": false
                   }
                 ]
@@ -358,8 +388,8 @@ stages:
         deploy:
           steps:
           - download: current
-            artifact: frontend-drop
-            displayName: 'Download Frontend Artifact'
+            artifact: frontend-prod-drop
+            displayName: 'Download Frontend Production Artifact'
             
           - task: AzureWebApp@1
             inputs:
@@ -367,7 +397,7 @@ stages:
               appType: 'webAppLinux'
               appName: $(webAppNameFrontendProd)
               resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/frontend-drop/frontend.zip'
+              package: '$(Pipeline.Workspace)/frontend-prod-drop/frontend-prod.zip'
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npx serve -s . -l 8080'
             displayName: 'Deploy Frontend to Production'
@@ -387,11 +417,6 @@ stages:
                   {
                     "name": "PORT",
                     "value": "8080",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "REACT_APP_API_URL",
-                    "value": "$(apiUrlProd)",
                     "slotSetting": false
                   }
                 ]
