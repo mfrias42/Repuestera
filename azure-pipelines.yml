@@ -124,7 +124,7 @@ stages:
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npm start'
               appSettings: |
-                NODE_ENV=$(NODE_ENV)
+                NODE_ENV=production
                 PORT=8000
                 WEBSITE_NODE_DEFAULT_VERSION=20.11.0
             displayName: 'Desplegar Backend a Azure App Service'
