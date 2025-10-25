@@ -38,8 +38,17 @@ app.use(limiter);
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
+  // QA URLs - HTTP y HTTPS
+  'http://repuestera-mfrias-qa-web.azurewebsites.net',
   'https://repuestera-mfrias-qa-web.azurewebsites.net',
-  'https://repuestera-web-mfrias.azurewebsites.net'
+  // Production URLs - HTTP y HTTPS  
+  'http://repuestera-web-mfrias.azurewebsites.net',
+  'https://repuestera-web-mfrias.azurewebsites.net',
+  // Variaciones adicionales de URLs
+  'http://repuestera-mfrias-web-qa.azurewebsites.net',
+  'https://repuestera-mfrias-web-qa.azurewebsites.net',
+  'http://repuestera-mfrias-web.azurewebsites.net',
+  'https://repuestera-mfrias-web.azurewebsites.net'
 ];
 
 // Función para validar origen
