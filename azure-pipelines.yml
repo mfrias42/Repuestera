@@ -161,6 +161,41 @@ stages:
                     "name": "WEBSITE_NODE_DEFAULT_VERSION",
                     "value": "20.11.0",
                     "slotSetting": false
+                  },
+                  {
+                    "name": "DB_HOST",
+                    "value": "localhost",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_PORT",
+                    "value": "3306",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_NAME",
+                    "value": "repuestera_qa_db",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_USER",
+                    "value": "qa_user",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_PASSWORD",
+                    "value": "qa_password_123",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "JWT_SECRET",
+                    "value": "qa_jwt_secret_key_2024",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "JWT_EXPIRES_IN",
+                    "value": "24h",
+                    "slotSetting": false
                   }
                 ]
             displayName: 'Configure QA Backend Settings'
@@ -272,6 +307,41 @@ stages:
                   {
                     "name": "WEBSITE_NODE_DEFAULT_VERSION",
                     "value": "20.11.0",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_HOST",
+                    "value": "localhost",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_PORT",
+                    "value": "3306",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_NAME",
+                    "value": "repuestera_prod_db",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_USER",
+                    "value": "prod_user",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_PASSWORD",
+                    "value": "prod_password_secure_2024",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "JWT_SECRET",
+                    "value": "prod_jwt_secret_key_secure_2024",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "JWT_EXPIRES_IN",
+                    "value": "24h",
                     "slotSetting": false
                   }
                 ]

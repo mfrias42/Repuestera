@@ -23,8 +23,15 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://repuestera-mfrias-qa-web.azurewebsites.net',
+  'https://repuestera-web-mfrias.azurewebsites.net'
+];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? 'tu-dominio.com' : ['http://localhost:3000', 'http://localhost:3001'],
+  origin: allowedOrigins,
   credentials: true
 }));
 
