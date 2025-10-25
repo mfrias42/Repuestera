@@ -11,7 +11,7 @@ variables:
   webAppNameBackend: 'repuestera-api-mfrias'
   webAppNameFrontend: 'repuestera-web-mfrias'
   resourceGroupName: 'rg-repuestera'
-  location: 'East US'
+  location: 'Brazil South'
   
   # Configuración de Node.js
   nodeVersion: '20.x'
