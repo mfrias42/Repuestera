@@ -1,6 +1,6 @@
-# Azure DevOps Pipeline para Repuestera
-# Despliegue en Azure App Service
-# Webhook test - Pipeline actualizado
+# Azure DevOps Release Pipeline para Repuestera
+# Despliegue multi-ambiente: QA → Producción
+# TP05 - Ingeniería de Software 3
 
 trigger:
 - main
@@ -8,17 +8,21 @@ trigger:
 variables:
   # Configuración de Azure
   azureSubscription: 'Azure-Service-Connection'
-  webAppNameBackend: 'repuestera-api-mfrias'
-  webAppNameFrontend: 'repuestera-web-mfrias'
   resourceGroupName: 'rg-repuestera'
   location: 'Brazil South'
   
   # Configuración de Node.js
   nodeVersion: '20.x'
   
-  # Variables de entorno para producción
-  NODE_ENV: 'production'
-  API_URL: 'https://repuestera-api-mfrias.azurewebsites.net/api'
+  # Variables QA
+  webAppNameBackendQA: 'repuestera-api-mfrias-qa'
+  webAppNameFrontendQA: 'repuestera-web-mfrias-qa'
+  apiUrlQA: 'https://repuestera-api-mfrias-qa.azurewebsites.net/api'
+  
+  # Variables Producción
+  webAppNameBackendProd: 'repuestera-api-mfrias'
+  webAppNameFrontendProd: 'repuestera-web-mfrias'
+  apiUrlProd: 'https://repuestera-api-mfrias.azurewebsites.net/api'
 
 stages:
 - stage: Build
@@ -76,11 +80,12 @@ stages:
     - script: |
         cd frontend
         npm install
+        # Build genérico - las variables específicas se configuran en cada ambiente
         npm run build
       displayName: 'Instalar dependencias y construir'
       env:
-        REACT_APP_API_URL: $(API_URL)
-        NODE_ENV: $(NODE_ENV)
+        REACT_APP_API_URL: 'PLACEHOLDER_WILL_BE_REPLACED'
+        NODE_ENV: 'production'
 
     - task: ArchiveFiles@2
       inputs:
@@ -98,14 +103,127 @@ stages:
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del frontend'
 
-- stage: Deploy
-  displayName: 'Despliegue'
+# ============================================================================
+# STAGE QA - Despliegue Automático para Testing
+# ============================================================================
+- stage: DeployQA
+  displayName: '🧪 QA Environment'
   dependsOn: Build
   condition: succeeded()
   
+  variables:
+    NODE_ENV: 'qa'
+    API_URL: $(apiUrlQA)
+  
   jobs:
-  - deployment: DeployBackend
-    displayName: 'Desplegar API Backend'
+  - deployment: DeployBackendQA
+    displayName: 'Deploy API to QA'
+    environment: 'qa-backend'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'webAppLinux'
+              appName: $(webAppNameBackendQA)
+              resourceGroupName: $(resourceGroupName)
+              package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
+              runtimeStack: 'NODE|20-lts'
+              startUpCommand: 'npm start'
+            displayName: 'Deploy Backend to QA'
+          
+          - task: AzureAppServiceSettings@1
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appName: $(webAppNameBackendQA)
+              resourceGroupName: $(resourceGroupName)
+              appSettings: |
+                [
+                  {
+                    "name": "NODE_ENV",
+                    "value": "qa",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "PORT",
+                    "value": "8000",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                    "value": "20.11.0",
+                    "slotSetting": false
+                  }
+                ]
+            displayName: 'Configure QA Backend Settings'
+
+  - deployment: DeployFrontendQA
+    displayName: 'Deploy Frontend to QA'
+    environment: 'qa-frontend'
+    pool:
+      vmImage: 'ubuntu-latest'
+    dependsOn: DeployBackendQA
+    
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'webAppLinux'
+              appName: $(webAppNameFrontendQA)
+              resourceGroupName: $(resourceGroupName)
+              package: '$(Pipeline.Workspace)/frontend-drop/frontend.zip'
+              runtimeStack: 'NODE|20-lts'
+              startUpCommand: 'npx serve -s . -l 8080'
+            displayName: 'Deploy Frontend to QA'
+          
+          - task: AzureAppServiceSettings@1
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appName: $(webAppNameFrontendQA)
+              resourceGroupName: $(resourceGroupName)
+              appSettings: |
+                [
+                  {
+                    "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                    "value": "20.11.0",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "PORT",
+                    "value": "8080",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "REACT_APP_API_URL",
+                    "value": "$(apiUrlQA)",
+                    "slotSetting": false
+                  }
+                ]
+            displayName: 'Configure QA Frontend Settings'
+
+# ============================================================================
+# STAGE PRODUCTION - Despliegue con Aprobación Manual
+# ============================================================================
+- stage: DeployProduction
+  displayName: '🚀 Production Environment'
+  dependsOn: DeployQA
+  condition: succeeded()
+  
+  variables:
+    NODE_ENV: 'production'
+    API_URL: $(apiUrlProd)
+  
+  jobs:
+  - deployment: DeployBackendProd
+    displayName: 'Deploy API to Production'
     environment: 'production-backend'
     pool:
       vmImage: 'ubuntu-latest'
@@ -118,17 +236,17 @@ stages:
             inputs:
               azureSubscription: $(azureSubscription)
               appType: 'webAppLinux'
-              appName: $(webAppNameBackend)
+              appName: $(webAppNameBackendProd)
               resourceGroupName: $(resourceGroupName)
               package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npm start'
-            displayName: 'Desplegar Backend a Azure App Service'
+            displayName: 'Deploy Backend to Production'
           
           - task: AzureAppServiceSettings@1
             inputs:
               azureSubscription: $(azureSubscription)
-              appName: $(webAppNameBackend)
+              appName: $(webAppNameBackendProd)
               resourceGroupName: $(resourceGroupName)
               appSettings: |
                 [
@@ -148,14 +266,14 @@ stages:
                     "slotSetting": false
                   }
                 ]
-            displayName: 'Configurar App Settings del Backend'
+            displayName: 'Configure Production Backend Settings'
 
-  - deployment: DeployFrontend
-    displayName: 'Desplegar Frontend Web'
+  - deployment: DeployFrontendProd
+    displayName: 'Deploy Frontend to Production'
     environment: 'production-frontend'
     pool:
       vmImage: 'ubuntu-latest'
-    dependsOn: DeployBackend
+    dependsOn: DeployBackendProd
     
     strategy:
       runOnce:
@@ -165,17 +283,17 @@ stages:
             inputs:
               azureSubscription: $(azureSubscription)
               appType: 'webAppLinux'
-              appName: $(webAppNameFrontend)
+              appName: $(webAppNameFrontendProd)
               resourceGroupName: $(resourceGroupName)
               package: '$(Pipeline.Workspace)/frontend-drop/frontend.zip'
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npx serve -s . -l 8080'
-            displayName: 'Desplegar Frontend a Azure App Service'
+            displayName: 'Deploy Frontend to Production'
           
           - task: AzureAppServiceSettings@1
             inputs:
               azureSubscription: $(azureSubscription)
-              appName: $(webAppNameFrontend)
+              appName: $(webAppNameFrontendProd)
               resourceGroupName: $(resourceGroupName)
               appSettings: |
                 [
@@ -188,6 +306,11 @@ stages:
                     "name": "PORT",
                     "value": "8080",
                     "slotSetting": false
+                  },
+                  {
+                    "name": "REACT_APP_API_URL",
+                    "value": "$(apiUrlProd)",
+                    "slotSetting": false
                   }
                 ]
-            displayName: 'Configurar App Settings del Frontend'
+            displayName: 'Configure Production Frontend Settings'
