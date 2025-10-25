@@ -203,7 +203,107 @@ Build → QA (Automático) → Production (Manual Approval)
 
 ---
 
-## 🎯 **9. Próximos Pasos**
+## 🔧 **9. Correcciones Implementadas**
+
+### **Pipeline sin Environments (Versión Inicial)**
+**Decisión**: Convertir deployment jobs a jobs normales eliminando dependencia de environments
+**Razón**: Los environments de Azure DevOps deben crearse manualmente antes de poder usarlos en el pipeline
+**Implementación**:
+- Cambio de `deployment:` a `job:` en todos los stages
+- Eliminación de referencias a `environment:` 
+- Adición de `download:` tasks para artefactos
+- Mantenimiento de la estructura multi-stage
+
+### **Configuración de Environments (Paso Opcional)**
+Para habilitar aprobaciones manuales más adelante:
+1. Crear environments en Azure DevOps: `qa-backend`, `qa-frontend`, `production-backend`, `production-frontend`
+2. Configurar aprobaciones en environments de producción
+3. Revertir jobs a deployment jobs con referencias a environments
+
+### **Corrección de Nombres de Recursos Azure**
+**Problema Identificado**: El pipeline fallaba porque los nombres de las Web Apps en las variables no coincidían con los recursos reales de Azure:
+- Pipeline esperaba: `repuestera-api-mfrias-qa`, `repuestera-web-mfrias-qa`
+- Recursos reales: `repuestera-mfrias-api`, `repuestera-mfrias-web`
+
+**Solución Implementada**:
+1. **Corrección de Variables del Pipeline**: Se actualizaron las variables en `azure-pipelines.yml`:
+   - QA Backend: `repuestera-mfrias-qa-api`
+   - QA Frontend: `repuestera-mfrias-qa-web`
+   - Prod Backend: `repuestera-mfrias-api` (existente)
+   - Prod Frontend: `repuestera-mfrias-web` (existente)
+
+2. **Creación de Recursos QA**: Se creó un template simplificado (`azure-infrastructure-qa-simple.json`) sin Application Insights para evitar problemas de registro de proveedores de recursos.
+
+3. **Deployment de Recursos QA**: Se desplegaron exitosamente los recursos QA:
+   - `repuestera-mfrias-qa-api.azurewebsites.net`
+   - `repuestera-mfrias-qa-web.azurewebsites.net`
+### Estado Actual
+- ✅ Variables del pipeline corregidas para QA y Producción
+- ✅ Recursos QA creados y funcionando
+- ✅ Variables de producción corregidas para usar recursos existentes
+- ✅ Pipeline listo para deployment completo
+- ✅ Cambios commiteados y pusheados
+
+### Corrección Final de Recursos de Producción
+**Problema**: Después de corregir QA, el pipeline fallaba en producción porque los nombres de recursos no coincidían.
+
+**Recursos Existentes en Azure**:
+- Backend Prod: `repuestera-api-mfrias`
+- Frontend Prod: `repuestera-web-mfrias`
+
+**Corrección Aplicada**: Se actualizaron las variables de producción en el pipeline para usar los nombres correctos de los recursos existentes.
+
+---
+
+## 🔐 **Implementación de Aprobaciones Manuales**
+
+### **Objetivo**: Configurar aprobaciones manuales para el pase a Producción según TP05.
+
+**Problema**: El pipeline actual usa jobs regulares que no soportan aprobaciones manuales.
+
+**Solución Implementada**:
+
+### **1. Conversión a Deployment Jobs**
+- Convertir jobs regulares a `deployment` jobs
+- Agregar `environment` property para cada deployment
+- Usar estrategia `runOnce` con sección `deploy`
+
+### **2. Environments Configurados**
+**QA (Sin aprobación)**:
+- `qa-backend`: Deploy automático del API
+- `qa-frontend`: Deploy automático del Frontend
+
+**Production (Con aprobación manual)**:
+- `production-backend`: Deploy del API con aprobación requerida
+- `production-frontend`: Deploy del Frontend con aprobación requerida
+
+### **3. Proceso de Aprobación**
+- **Approver Principal**: mfrias42@dev.azure.com
+- **Criterios**: Tests QA exitosos, validación funcional, sin bugs críticos
+- **Timeout**: 30 días
+- **Política**: Mínimo 1 approver, requestor no puede auto-aprobar
+
+### **4. Archivos Creados/Modificados**
+- `azure-pipelines.yml`: Convertido a deployment jobs con environments
+- `APPROVAL_PROCESS.md`: Documentación completa del proceso
+- `setup-environments.sh`: Guía para configuración manual
+
+### **5. Configuración Manual Requerida**
+Los environments deben crearse manualmente en Azure DevOps:
+1. Acceder a Pipelines → Environments
+2. Crear 4 environments (qa-backend, qa-frontend, production-backend, production-frontend)
+3. Configurar aprobaciones solo para production environments
+4. Agregar approvers y políticas
+
+**Estado**: ✅ Pipeline modificado - Requiere configuración manual de environments en Azure DevOps
+
+**Próximos pasos**:
+1. Crear environments manualmente en Azure DevOps
+2. Configurar aprobaciones para production environments
+3. Probar flujo completo con aprobaciones
+4. Validar proceso de rollback si es necesario
+
+## 🎯 **10. Próximos Pasos**
 
 ### **Mejoras Planificadas:**
 1. **Blue-Green Deployment** para zero-downtime
@@ -211,6 +311,7 @@ Build → QA (Automático) → Production (Manual Approval)
 3. **Security Scanning** automático
 4. **Performance Testing** en QA
 5. **Canary Deployments** para releases críticos
+6. **Configuración de Environments para aprobaciones manuales**
 
 ### **Automatizaciones Futuras:**
 - Auto-rollback basado en métricas
@@ -220,7 +321,7 @@ Build → QA (Automático) → Production (Manual Approval)
 
 ---
 
-## 📝 **10. Lecciones Aprendidas**
+## 📝 **11. Lecciones Aprendidas**
 
 ### **Problemas Encontrados:**
 1. **AppSettings Parsing**: Resuelto con AzureAppServiceSettings
