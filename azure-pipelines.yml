@@ -20,9 +20,9 @@ variables:
   apiUrlQA: 'https://repuestera-mfrias-qa-api.azurewebsites.net/api'
   
   # Variables Producción (recursos existentes)
-  webAppNameBackendProd: 'repuestera-mfrias-api'
-  webAppNameFrontendProd: 'repuestera-mfrias-web'
-  apiUrlProd: 'https://repuestera-mfrias-api.azurewebsites.net/api'
+  webAppNameBackendProd: 'repuestera-api-mfrias'
+  webAppNameFrontendProd: 'repuestera-web-mfrias'
+  apiUrlProd: 'https://repuestera-api-mfrias.azurewebsites.net/api'
 
 stages:
 - stage: Build
