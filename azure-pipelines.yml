@@ -123,8 +123,32 @@ stages:
               package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npm start'
-              appSettings: 'NODE_ENV=production PORT=8000 WEBSITE_NODE_DEFAULT_VERSION=20.11.0'
             displayName: 'Desplegar Backend a Azure App Service'
+          
+          - task: AzureAppServiceSettings@1
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appName: $(webAppNameBackend)
+              resourceGroupName: $(resourceGroupName)
+              appSettings: |
+                [
+                  {
+                    "name": "NODE_ENV",
+                    "value": "production",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "PORT",
+                    "value": "8000",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                    "value": "20.11.0",
+                    "slotSetting": false
+                  }
+                ]
+            displayName: 'Configurar App Settings del Backend'
 
   - deployment: DeployFrontend
     displayName: 'Desplegar Frontend Web'
@@ -146,5 +170,24 @@ stages:
               package: '$(Pipeline.Workspace)/frontend-drop/frontend.zip'
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npx serve -s . -l 8080'
-              appSettings: 'WEBSITE_NODE_DEFAULT_VERSION=20.11.0 PORT=8080'
             displayName: 'Desplegar Frontend a Azure App Service'
+          
+          - task: AzureAppServiceSettings@1
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appName: $(webAppNameFrontend)
+              resourceGroupName: $(resourceGroupName)
+              appSettings: |
+                [
+                  {
+                    "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                    "value": "20.11.0",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "PORT",
+                    "value": "8080",
+                    "slotSetting": false
+                  }
+                ]
+            displayName: 'Configurar App Settings del Frontend'
