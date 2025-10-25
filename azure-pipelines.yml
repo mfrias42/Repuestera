@@ -7,17 +7,17 @@ trigger:
 variables:
   # Configuración de Azure
   azureSubscription: 'Azure-Service-Connection'
-  webAppNameBackend: 'repuestera-api'
-  webAppNameFrontend: 'repuestera-web'
+  webAppNameBackend: 'repuestera-api-mfrias'
+  webAppNameFrontend: 'repuestera-web-mfrias'
   resourceGroupName: 'rg-repuestera'
   location: 'East US'
   
   # Configuración de Node.js
-  nodeVersion: '18.x'
+  nodeVersion: '20.x'
   
   # Variables de entorno para producción
   NODE_ENV: 'production'
-  API_URL: 'https://repuestera-api.azurewebsites.net/api'
+  API_URL: 'https://repuestera-api-mfrias.azurewebsites.net/api'
 
 stages:
 - stage: Build
@@ -36,7 +36,7 @@ stages:
 
     - script: |
         cd backend
-        npm ci --production=false
+        npm install --production=false
         npm run test --if-present
       displayName: 'Instalar dependencias y ejecutar pruebas'
 
@@ -69,7 +69,7 @@ stages:
 
     - script: |
         cd frontend
-        npm ci
+        npm install
         npm run build
       displayName: 'Instalar dependencias y construir'
       env:

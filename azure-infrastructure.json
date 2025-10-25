@@ -4,7 +4,7 @@
   "parameters": {
     "appNamePrefix": {
       "type": "string",
-      "defaultValue": "repuestera",
+      "defaultValue": "repuestera-mfrias",
       "metadata": {
         "description": "Prefijo para los nombres de los recursos"
       }
