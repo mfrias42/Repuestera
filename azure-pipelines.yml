@@ -119,6 +119,7 @@ stages:
               azureSubscription: $(azureSubscription)
               appType: 'webAppLinux'
               appName: $(webAppNameBackend)
+              resourceGroupName: $(resourceGroupName)
               package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npm start'
@@ -144,6 +145,7 @@ stages:
               azureSubscription: $(azureSubscription)
               appType: 'webAppLinux'
               appName: $(webAppNameFrontend)
+              resourceGroupName: $(resourceGroupName)
               package: '$(Pipeline.Workspace)/frontend-drop/frontend.zip'
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npx serve -s . -l 8080'
