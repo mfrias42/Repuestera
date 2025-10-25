@@ -124,9 +124,9 @@ stages:
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npm start'
               appSettings: |
-                -NODE_ENV $(NODE_ENV)
-                -PORT 8000
-                -WEBSITE_NODE_DEFAULT_VERSION 20.11.0
+                NODE_ENV=$(NODE_ENV)
+                PORT=8000
+                WEBSITE_NODE_DEFAULT_VERSION=20.11.0
             displayName: 'Desplegar Backend a Azure App Service'
 
   - deployment: DeployFrontend
@@ -150,6 +150,6 @@ stages:
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npx serve -s . -l 8080'
               appSettings: |
-                -WEBSITE_NODE_DEFAULT_VERSION 20.11.0
-                -PORT 8080
+                WEBSITE_NODE_DEFAULT_VERSION=20.11.0
+                PORT=8080
             displayName: 'Desplegar Frontend a Azure App Service'
