@@ -1,5 +1,6 @@
 # Azure DevOps Pipeline para Repuestera
 # Despliegue en Azure App Service
+# Webhook test - Pipeline actualizado
 
 trigger:
 - main
