@@ -411,4 +411,40 @@ router.post('/create-admin-temp', async (req, res) => {
   }
 });
 
+// Endpoint temporal para debug de base de datos
+router.get('/debug-db', async (req, res) => {
+  try {
+    const { executeQuery } = require('../config/database');
+    
+    // Verificar si la tabla administradores existe
+    const tableCheck = await executeQuery(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name='administradores'
+    `);
+    
+    // Obtener todos los administradores
+    const admins = await executeQuery('SELECT * FROM administradores');
+    
+    res.json({
+      success: true,
+      tableExists: tableCheck.length > 0,
+      adminsCount: admins.length,
+      admins: admins.map(admin => ({
+        id: admin.id,
+        email: admin.email,
+        nombre: admin.nombre,
+        activo: admin.activo
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error en debug:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
