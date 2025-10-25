@@ -108,7 +108,7 @@ router.get('/',
 
       const totalPages = Math.ceil(total / limit);
 
-      res.json({
+      const response = {
         products: products.map(product => product.toJSON()),
         pagination: {
           current_page: page,
@@ -127,7 +127,8 @@ router.get('/',
           order_by: options.orderBy,
           order_direction: options.orderDirection
         }
-      });
+      };
+      res.json(response);
 
     } catch (error) {
       console.error('❌ Error detallado obteniendo productos:', {

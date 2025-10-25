@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Connection</title>
+</head>
+<body>
+    <h1>Test API Connection</h1>
+    <button onclick="testProducts()">Test Products API</button>
+    <button onclick="testHealth()">Test Health API</button>
+    <div id="results"></div>
+
+    <script>
+        async function testHealth() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing health endpoint...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/health');
+                const data = await response.json();
+                results.innerHTML += `<h3>Health Response:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML += `<h3>Health Error:</h3><pre>${error.message}</pre>`;
+                console.error('Health error:', error);
+            }
+        }
+
+        async function testProducts() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing products endpoint...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/products');
+                const data = await response.json();
+                results.innerHTML += `<h3>Products Response:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML += `<h3>Products Error:</h3><pre>${error.message}</pre>`;
+                console.error('Products error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

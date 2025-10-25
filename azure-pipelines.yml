@@ -199,7 +199,7 @@ stages:
                   },
                   {
                     "name": "DB_HOST",
-                    "value": "localhost",
+                    "value": "repuestera-mfrias-qa-server.mysql.database.azure.com",
                     "slotSetting": false
                   },
                   {
@@ -214,12 +214,12 @@ stages:
                   },
                   {
                     "name": "DB_USER",
-                    "value": "qa_user",
+                    "value": "qa_admin",
                     "slotSetting": false
                   },
                   {
                     "name": "DB_PASSWORD",
-                    "value": "qa_password_123",
+                    "value": "QA_SecurePass2024!",
                     "slotSetting": false
                   },
                   {
@@ -234,6 +234,17 @@ stages:
                   }
                 ]
             displayName: 'Configure QA Backend Settings'
+          
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'webAppLinux'
+              appName: $(webAppNameBackendQA)
+              resourceGroupName: $(resourceGroupName)
+              package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
+              runtimeStack: 'NODE|20-lts'
+              startUpCommand: 'cd /home/site/wwwroot && npm run init-db-qa && npm start'
+            displayName: 'Initialize QA Database and Start Backend'
 
   - deployment: DeployFrontendQA
     displayName: 'Deploy Frontend to QA'
@@ -341,7 +352,7 @@ stages:
                   },
                   {
                     "name": "DB_HOST",
-                    "value": "localhost",
+                    "value": "repuestera-server-mfrias.mysql.database.azure.com",
                     "slotSetting": false
                   },
                   {
@@ -356,12 +367,12 @@ stages:
                   },
                   {
                     "name": "DB_USER",
-                    "value": "prod_user",
+                    "value": "prod_admin",
                     "slotSetting": false
                   },
                   {
                     "name": "DB_PASSWORD",
-                    "value": "prod_password_secure_2024",
+                    "value": "Prod_SecurePass2024!",
                     "slotSetting": false
                   },
                   {
@@ -376,6 +387,17 @@ stages:
                   }
                 ]
             displayName: 'Configure Production Backend Settings'
+          
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'webAppLinux'
+              appName: $(webAppNameBackendProd)
+              resourceGroupName: $(resourceGroupName)
+              package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
+              runtimeStack: 'NODE|20-lts'
+              startUpCommand: 'cd /home/site/wwwroot && npm run init-db-prod && npm start'
+            displayName: 'Initialize Production Database and Start Backend'
 
   - deployment: DeployFrontendProd
     displayName: '🔐 Deploy Frontend to Production (Manual Approval Required)'
