@@ -9,6 +9,15 @@ const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const userRoutes = require('./routes/users');
 
+// Inicializar base de datos
+const { testConnection } = require('./config/database');
+
+// Si estamos en Azure (qa o production), inicializar SQLite
+if (process.env.NODE_ENV === 'qa' || process.env.NODE_ENV === 'production') {
+  const { initializeTables } = require('./config/database-sqlite');
+  initializeTables().catch(console.error);
+}
+
 const app = express();
 const PORT = process.env.PORT || 8000;
 
