@@ -11,7 +11,10 @@ async function initDatabase() {
       host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || ''
+      password: process.env.DB_PASSWORD || '',
+      ssl: {
+        rejectUnauthorized: false
+      }
     });
 
     console.log('🔗 Conectado a MySQL');
@@ -141,8 +144,8 @@ async function initDatabase() {
     // Crear administrador por defecto
     const adminPassword = await bcrypt.hash('admin123', 12);
     await connection.execute(`
-      INSERT IGNORE INTO administradores (nombre, apellido, email, password, rol) 
-      VALUES ('Admin', 'Sistema', 'admin@repuestera.com', ?, 'super_admin')
+      INSERT IGNORE INTO administradores (nombre, apellido, email, password) 
+      VALUES ('Admin', 'Sistema', 'admin@repuestera.com', ?)
     `, [adminPassword]);
     console.log('👨‍💼 Administrador por defecto creado (email: admin@repuestera.com, password: admin123)');
 
