@@ -14,18 +14,16 @@ const debugRoutes = require('./routes/debug');
 const { testConnection, initializeTables } = require('./config/database-mysql');
 const { fixDatabase } = require('./scripts/fixDatabase');
 
-// Probar conexión a la base de datos al iniciar
+// Probar conexión a la base de datos al iniciar (sin reparación automática)
 testConnection().then(success => {
   if (success) {
     console.log('✅ Base de datos conectada correctamente');
-    // Ejecutar reparación de base de datos
-    return fixDatabase();
+    // Comentado para evitar timeout en el pipeline
+    // return fixDatabase();
   } else {
     console.error('❌ Error conectando a la base de datos');
     throw new Error('No se pudo conectar a la base de datos');
   }
-}).then(() => {
-  console.log('✅ Base de datos reparada correctamente');
 }).catch(console.error);
 
 const app = express();
