@@ -200,7 +200,7 @@ class Admin {
     return {
       id: this.id,
       nombre: `${this.nombre} ${this.apellido}`,
-      rol: this.rol,
+      rol: this.rol || 'admin',
       ultimo_acceso: this.ultimo_acceso,
       fecha_registro: this.fecha_registro
     };
@@ -209,6 +209,10 @@ class Admin {
   // Convertir a JSON (sin password)
   toJSON() {
     const { password, ...adminWithoutPassword } = this;
+    // Asegurar que rol existe
+    if (!adminWithoutPassword.rol) {
+      adminWithoutPassword.rol = 'admin';
+    }
     return adminWithoutPassword;
   }
 }
