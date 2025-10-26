@@ -43,17 +43,12 @@ app.use(limiter);
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
-  // QA URLs - HTTP y HTTPS
+  // URLs de Azure App Service
   'http://repuestera-web.azurewebsites.net',
   'https://repuestera-web.azurewebsites.net',
-  // Production URLs - HTTP y HTTPS  
-  'http://repuestera-web.azurewebsites.net',
-  'https://repuestera-web.azurewebsites.net',
-  // Variaciones adicionales de URLs
-  'http://repuestera-web.azurewebsites.net',
-  'https://repuestera-web.azurewebsites.net',
-  'http://repuestera-web.azurewebsites.net',
-  'https://repuestera-web.azurewebsites.net'
+  // URLs adicionales para desarrollo
+  'http://localhost:8080',
+  'http://localhost:8000'
 ];
 
 // Función para validar origen
