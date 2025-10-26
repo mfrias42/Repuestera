@@ -1,5 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
+const User = require('../models/User');
+const Admin = require('../models/Admin');
 const { 
   generateUserToken, 
   generateAdminToken, 
@@ -21,6 +23,33 @@ const loginValidation = [
     .withMessage('La contraseña debe tener al menos 6 caracteres')
 ];
 
+const registerValidation = [
+  body('nombre')
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('El nombre debe tener entre 2 y 100 caracteres'),
+  body('apellido')
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('El apellido debe tener entre 2 y 100 caracteres'),
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Debe proporcionar un email válido'),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('La contraseña debe tener al menos 6 caracteres'),
+  body('telefono')
+    .optional({ checkFalsy: true })
+    .isMobilePhone('es-AR')
+    .withMessage('Debe proporcionar un número de teléfono válido'),
+  body('direccion')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('La dirección no puede exceder 500 caracteres')
+];
+
 // Middleware para manejar errores de validación
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
@@ -33,6 +62,85 @@ const handleValidationErrors = (req, res, next) => {
   }
   next();
 };
+
+// POST /api/auth/register - Registro de usuarios
+router.post('/register', registerValidation, handleValidationErrors, async (req, res) => {
+  try {
+    const { nombre, apellido, email, password, telefono, direccion } = req.body;
+
+    // Crear usuario
+    const user = await User.create({
+      nombre,
+      apellido,
+      email,
+      password,
+      telefono,
+      direccion
+    });
+
+    // Generar token
+    const token = generateUserToken(user);
+
+    console.log('✅ Registro completado exitosamente');
+    res.status(201).json({
+      message: 'Usuario registrado exitosamente',
+      user: user.toJSON(),
+      token,
+      expires_in: process.env.JWT_EXPIRES_IN || '24h'
+    });
+
+  } catch (error) {
+    console.error('❌ Error en registro:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: 'No se pudo completar el registro'
+    });
+  }
+});
+
+// POST /api/auth/login - Login de usuarios
+router.post('/login', loginValidation, handleValidationErrors, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Buscar usuario
+    const user = await User.findByEmail(email);
+    if (!user) {
+      return res.status(401).json({
+        error: 'Credenciales inválidas',
+        message: 'Email o contraseña incorrectos'
+      });
+    }
+
+    // Verificar contraseña
+    const isValidPassword = await user.verifyPassword(password);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        error: 'Credenciales inválidas',
+        message: 'Email o contraseña incorrectos'
+      });
+    }
+
+    // Generar token
+    const token = generateUserToken(user);
+
+    res.json({
+      message: 'Inicio de sesión exitoso',
+      user: user.toJSON(),
+      token,
+      expires_in: process.env.JWT_EXPIRES_IN || '24h'
+    });
+
+  } catch (error) {
+    console.error('❌ Error en login:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: 'No se pudo completar el inicio de sesión'
+    });
+  }
+});
 
 // POST /api/auth/admin/login - Login de administradores (VERSIÓN CORREGIDA)
 router.post('/admin/login', loginValidation, handleValidationErrors, async (req, res) => {
@@ -114,6 +222,62 @@ router.post('/admin/login', loginValidation, handleValidationErrors, async (req,
     res.status(500).json({
       error: 'Error interno del servidor',
       message: 'No se pudo completar el inicio de sesión'
+    });
+  }
+});
+
+// POST /api/auth/logout - Logout (para ambos tipos de usuario)
+router.post('/logout', verifyToken, async (req, res) => {
+  try {
+    // Aquí podrías invalidar el token en la base de datos si tienes una tabla de sesiones
+    // Por ahora, simplemente confirmamos el logout
+    res.json({
+      message: 'Sesión cerrada exitosamente'
+    });
+  } catch (error) {
+    console.error('❌ Error en logout:', error);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: 'No se pudo cerrar la sesión'
+    });
+  }
+});
+
+// GET /api/auth/me - Obtener información del usuario actual
+router.get('/me', verifyToken, async (req, res) => {
+  try {
+    const { id, type } = req.user;
+    
+    if (type === 'admin') {
+      const admin = await Admin.findById(id);
+      if (!admin) {
+        return res.status(404).json({
+          error: 'Administrador no encontrado',
+          message: 'El administrador no existe'
+        });
+      }
+      res.json({
+        user: admin.toJSON(),
+        type: 'admin'
+      });
+    } else {
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({
+          error: 'Usuario no encontrado',
+          message: 'El usuario no existe'
+        });
+      }
+      res.json({
+        user: user.toJSON(),
+        type: 'user'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error obteniendo información del usuario:', error);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: 'No se pudo obtener la información del usuario'
     });
   }
 });
