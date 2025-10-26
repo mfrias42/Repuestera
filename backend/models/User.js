@@ -1,4 +1,4 @@
-const { executeQuery } = require('../config/database-sqlite');
+const { executeQuery } = require('../config/database-mysql');
 const bcrypt = require('bcryptjs');
 
 class User {

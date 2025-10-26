@@ -1,4 +1,4 @@
-const { executeQuery } = require('../config/database-sqlite');
+const { executeQuery } = require('../config/database-mysql');
 
 class Category {
   constructor(data) {

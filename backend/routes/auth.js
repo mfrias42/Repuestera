@@ -433,7 +433,7 @@ router.post('/create-admin-temp', async (req, res) => {
 // Endpoint temporal para debug de base de datos
 router.get('/debug-db', async (req, res) => {
   try {
-    const { executeQuery } = require('../config/database-sqlite');
+    const { executeQuery } = require('../config/database-mysql');
     
     // Verificar si la tabla administradores existe
     const tableCheck = await executeQuery(`
@@ -469,7 +469,7 @@ router.get('/debug-db', async (req, res) => {
 // Endpoint temporal para verificar y corregir contraseña del admin
 router.post('/fix-admin-password', async (req, res) => {
   try {
-    const { executeQuery } = require('../config/database-sqlite');
+    const { executeQuery } = require('../config/database-mysql');
     const bcrypt = require('bcryptjs');
     
     // Buscar el administrador

@@ -9,8 +9,8 @@ const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const userRoutes = require('./routes/users');
 
-// Inicializar base de datos (SQLite o Azure SQL según configuración)
-const { testConnection, initializeTables } = require('./config/database');
+// Inicializar base de datos MySQL
+const { testConnection, initializeTables } = require('./config/database-mysql');
 
 // Probar conexión a la base de datos al iniciar
 testConnection().then(success => {
