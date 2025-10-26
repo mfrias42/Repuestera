@@ -129,4 +129,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
   console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+  console.log('🔧 Versión con reparación de base de datos aplicada');
 });
