@@ -14,15 +14,15 @@ variables:
   # Configuración de Node.js
   nodeVersion: '20.x'
   
-  # Variables QA (usando recursos existentes)
-  webAppNameBackendQA: 'repuestera-api'
-  webAppNameFrontendQA: 'repuestera-web'
-  apiUrlQA: 'https://repuestera-api.azurewebsites.net/api'
+  # Variables QA
+  webAppNameBackendQA: 'repuestera-api-qa'
+  webAppNameFrontendQA: 'repuestera-web-qa'
+  apiUrlQA: 'https://repuestera-api-qa.azurewebsites.net/api'
   
-  # Variables Producción (usando recursos existentes)
-  webAppNameBackendProd: 'repuestera-api'
-  webAppNameFrontendProd: 'repuestera-web'
-  apiUrlProd: 'https://repuestera-api.azurewebsites.net/api'
+  # Variables Producción
+  webAppNameBackendProd: 'repuestera-api-prod'
+  webAppNameFrontendProd: 'repuestera-web-prod'
+  apiUrlProd: 'https://repuestera-api-prod.azurewebsites.net/api'
 
 stages:
 - stage: Build

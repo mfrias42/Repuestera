@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const userRoutes = require('./routes/users');
 const debugRoutes = require('./routes/debug');
+const testRoutes = require('./routes/test-simple');
 
 // Inicializar base de datos MySQL
 const { testConnection, initializeTables } = require('./config/database-mysql');
@@ -84,6 +85,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api/test', testRoutes);
 
 // Ruta de prueba con verificación de base de datos
 app.get('/api/health', async (req, res) => {
