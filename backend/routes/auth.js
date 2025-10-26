@@ -1,7 +1,5 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const User = require('../models/User');
-const Admin = require('../models/Admin');
 const { 
   generateUserToken, 
   generateAdminToken, 
@@ -63,20 +61,63 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+// Función para conectar a la base de datos
+async function getConnection() {
+  const mysql = require('mysql2/promise');
+  return await mysql.createConnection({
+    host: process.env.DB_HOST || 'manufrias.mysql.database.azure.com',
+    port: process.env.DB_PORT || 3306,
+    user: process.env.DB_USER || 'A',
+    password: process.env.DB_PASSWORD || '4286Pka1#',
+    database: process.env.DB_NAME || 'repuestera_db',
+    ssl: { rejectUnauthorized: false }
+  });
+}
+
 // POST /api/auth/register - Registro de usuarios
 router.post('/register', registerValidation, handleValidationErrors, async (req, res) => {
+  let connection;
   try {
     const { nombre, apellido, email, password, telefono, direccion } = req.body;
 
+    connection = await getConnection();
+
+    // Verificar si el usuario ya existe
+    const [existingUsers] = await connection.execute(
+      'SELECT id FROM usuarios WHERE email = ?',
+      [email]
+    );
+
+    if (existingUsers.length > 0) {
+      await connection.end();
+      return res.status(400).json({
+        error: 'Usuario ya existe',
+        message: 'Ya existe un usuario con este email'
+      });
+    }
+
+    // Hashear password
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     // Crear usuario
-    const user = await User.create({
+    const [result] = await connection.execute(
+      'INSERT INTO usuarios (nombre, apellido, email, password, telefono, direccion) VALUES (?, ?, ?, ?, ?, ?)',
+      [nombre, apellido, email, hashedPassword, telefono || null, direccion || null]
+    );
+
+    await connection.end();
+
+    // Crear objeto usuario para el token
+    const user = {
+      id: result.insertId,
       nombre,
       apellido,
       email,
-      password,
       telefono,
-      direccion
-    });
+      direccion,
+      activo: true
+    };
 
     // Generar token
     const token = generateUserToken(user);
@@ -84,14 +125,14 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
     console.log('✅ Registro completado exitosamente');
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
-      user: user.toJSON(),
+      user: user,
       token,
       expires_in: process.env.JWT_EXPIRES_IN || '24h'
     });
 
   } catch (error) {
+    if (connection) await connection.end();
     console.error('❌ Error en registro:', error);
-    console.error('Stack trace:', error.stack);
     res.status(500).json({
       error: 'Error interno del servidor',
       message: 'No se pudo completar el registro'
@@ -101,20 +142,32 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
 
 // POST /api/auth/login - Login de usuarios
 router.post('/login', loginValidation, handleValidationErrors, async (req, res) => {
+  let connection;
   try {
     const { email, password } = req.body;
 
+    connection = await getConnection();
+
     // Buscar usuario
-    const user = await User.findByEmail(email);
-    if (!user) {
+    const [users] = await connection.execute(
+      'SELECT * FROM usuarios WHERE email = ? AND activo = 1',
+      [email]
+    );
+
+    await connection.end();
+
+    if (users.length === 0) {
       return res.status(401).json({
         error: 'Credenciales inválidas',
         message: 'Email o contraseña incorrectos'
       });
     }
 
+    const user = users[0];
+
     // Verificar contraseña
-    const isValidPassword = await user.verifyPassword(password);
+    const bcrypt = require('bcryptjs');
+    const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({
         error: 'Credenciales inválidas',
@@ -122,19 +175,30 @@ router.post('/login', loginValidation, handleValidationErrors, async (req, res) 
       });
     }
 
+    // Crear objeto usuario para el token
+    const userObj = {
+      id: user.id,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      email: user.email,
+      telefono: user.telefono,
+      direccion: user.direccion,
+      activo: user.activo
+    };
+
     // Generar token
-    const token = generateUserToken(user);
+    const token = generateUserToken(userObj);
 
     res.json({
       message: 'Inicio de sesión exitoso',
-      user: user.toJSON(),
+      user: userObj,
       token,
       expires_in: process.env.JWT_EXPIRES_IN || '24h'
     });
 
   } catch (error) {
+    if (connection) await connection.end();
     console.error('❌ Error en login:', error);
-    console.error('Stack trace:', error.stack);
     res.status(500).json({
       error: 'Error interno del servidor',
       message: 'No se pudo completar el inicio de sesión'
@@ -142,25 +206,16 @@ router.post('/login', loginValidation, handleValidationErrors, async (req, res) 
   }
 });
 
-// POST /api/auth/admin/login - Login de administradores (VERSIÓN CORREGIDA)
+// POST /api/auth/admin/login - Login de administradores
 router.post('/admin/login', loginValidation, handleValidationErrors, async (req, res) => {
+  let connection;
   try {
     const { email, password } = req.body;
     console.log(`🔐 Intento de login admin: ${email}`);
 
-    // Conectar directamente a la base de datos (mismo método que funciona en debug)
-    const mysql = require('mysql2/promise');
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'manufrias.mysql.database.azure.com',
-      port: process.env.DB_PORT || 3306,
-      user: process.env.DB_USER || 'A',
-      password: process.env.DB_PASSWORD || '4286Pka1#',
-      database: process.env.DB_NAME || 'repuestera_db',
-      ssl: { rejectUnauthorized: false }
-    });
+    connection = await getConnection();
 
     // Buscar administrador
-    console.log('📋 Buscando administrador en la base de datos...');
     const [admins] = await connection.execute(
       'SELECT * FROM administradores WHERE email = ? AND activo = 1',
       [email]
@@ -169,7 +224,6 @@ router.post('/admin/login', loginValidation, handleValidationErrors, async (req,
     await connection.end();
     
     if (admins.length === 0) {
-      console.log(`❌ Admin no encontrado: ${email}`);
       return res.status(401).json({
         error: 'Credenciales inválidas',
         message: 'Email o contraseña incorrectos'
@@ -177,16 +231,12 @@ router.post('/admin/login', loginValidation, handleValidationErrors, async (req,
     }
 
     const admin = admins[0];
-    console.log(`✅ Admin encontrado: ${admin.email}, ID: ${admin.id}, Activo: ${admin.activo}`);
 
     // Verificar contraseña
-    console.log('🔑 Verificando contraseña...');
     const bcrypt = require('bcryptjs');
     const isValidPassword = await bcrypt.compare(password, admin.password);
-    console.log(`🔑 Resultado verificación contraseña: ${isValidPassword}`);
     
     if (!isValidPassword) {
-      console.log(`❌ Contraseña incorrecta para: ${email}`);
       return res.status(401).json({
         error: 'Credenciales inválidas',
         message: 'Email o contraseña incorrectos'
@@ -204,11 +254,8 @@ router.post('/admin/login', loginValidation, handleValidationErrors, async (req,
     };
 
     // Generar token
-    console.log('🎫 Generando token...');
     const token = generateAdminToken(adminObj);
-    console.log('✅ Token generado exitosamente');
 
-    console.log(`✅ Login admin exitoso: ${email}`);
     res.json({
       message: 'Inicio de sesión administrativo exitoso',
       admin: adminObj,
@@ -217,8 +264,8 @@ router.post('/admin/login', loginValidation, handleValidationErrors, async (req,
     });
 
   } catch (error) {
+    if (connection) await connection.end();
     console.error('❌ Error en login admin:', error);
-    console.error('Stack trace:', error.stack);
     res.status(500).json({
       error: 'Error interno del servidor',
       message: 'No se pudo completar el inicio de sesión'
@@ -226,11 +273,9 @@ router.post('/admin/login', loginValidation, handleValidationErrors, async (req,
   }
 });
 
-// POST /api/auth/logout - Logout (para ambos tipos de usuario)
+// POST /api/auth/logout - Logout
 router.post('/logout', verifyToken, async (req, res) => {
   try {
-    // Aquí podrías invalidar el token en la base de datos si tienes una tabla de sesiones
-    // Por ahora, simplemente confirmamos el logout
     res.json({
       message: 'Sesión cerrada exitosamente'
     });
@@ -245,35 +290,53 @@ router.post('/logout', verifyToken, async (req, res) => {
 
 // GET /api/auth/me - Obtener información del usuario actual
 router.get('/me', verifyToken, async (req, res) => {
+  let connection;
   try {
     const { id, type } = req.user;
     
+    connection = await getConnection();
+    
     if (type === 'admin') {
-      const admin = await Admin.findById(id);
-      if (!admin) {
+      const [admins] = await connection.execute(
+        'SELECT id, nombre, apellido, email, rol, activo FROM administradores WHERE id = ?',
+        [id]
+      );
+      
+      await connection.end();
+      
+      if (admins.length === 0) {
         return res.status(404).json({
           error: 'Administrador no encontrado',
           message: 'El administrador no existe'
         });
       }
+      
       res.json({
-        user: admin.toJSON(),
+        user: admins[0],
         type: 'admin'
       });
     } else {
-      const user = await User.findById(id);
-      if (!user) {
+      const [users] = await connection.execute(
+        'SELECT id, nombre, apellido, email, telefono, direccion, activo FROM usuarios WHERE id = ?',
+        [id]
+      );
+      
+      await connection.end();
+      
+      if (users.length === 0) {
         return res.status(404).json({
           error: 'Usuario no encontrado',
           message: 'El usuario no existe'
         });
       }
+      
       res.json({
-        user: user.toJSON(),
+        user: users[0],
         type: 'user'
       });
     }
   } catch (error) {
+    if (connection) await connection.end();
     console.error('❌ Error obteniendo información del usuario:', error);
     res.status(500).json({
       error: 'Error interno del servidor',
