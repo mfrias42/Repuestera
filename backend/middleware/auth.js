@@ -230,7 +230,7 @@ const generateAdminToken = (admin) => {
     id: admin.id,
     email: admin.email,
     type: 'admin',
-    rol: admin.rol
+    rol: admin.rol || 'admin' // Usar 'admin' por defecto si no existe
   };
   
   return generateToken(payload);
