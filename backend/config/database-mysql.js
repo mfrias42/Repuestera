@@ -159,18 +159,24 @@ async function initializeTables() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
-    // Crear índices para mejor rendimiento
-    await executeQuery(`
-      CREATE INDEX IF NOT EXISTS idx_productos_categoria ON productos(categoria_id)
-    `);
+    // Crear índices para mejor rendimiento (MySQL no soporta IF NOT EXISTS para índices)
+    try {
+      await executeQuery(`CREATE INDEX idx_productos_categoria ON productos(categoria_id)`);
+    } catch (err) {
+      if (err.code !== 'ER_DUP_KEYNAME') throw err;
+    }
     
-    await executeQuery(`
-      CREATE INDEX IF NOT EXISTS idx_productos_activo ON productos(activo)
-    `);
+    try {
+      await executeQuery(`CREATE INDEX idx_productos_activo ON productos(activo)`);
+    } catch (err) {
+      if (err.code !== 'ER_DUP_KEYNAME') throw err;
+    }
     
-    await executeQuery(`
-      CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email)
-    `);
+    try {
+      await executeQuery(`CREATE INDEX idx_usuarios_email ON usuarios(email)`);
+    } catch (err) {
+      if (err.code !== 'ER_DUP_KEYNAME') throw err;
+    }
 
     console.log('✅ Tablas MySQL Flexible Server inicializadas correctamente');
     
