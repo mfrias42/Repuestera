@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Script para desplegar infraestructura QA en Azure
+# Script para desplegar infraestructura SQLite en Azure
 # TP05 - Ingeniería de Software 3
 
 set -e
 
 # Configuración
-RESOURCE_GROUP="rg-repuestera-qa"
-LOCATION="East US"
+RESOURCE_GROUP="rg-repuestera-sqlite"
+LOCATION="West Europe"
 TEMPLATE_FILE="azure-infrastructure-qa-simple.json"
-DEPLOYMENT_NAME="repuestera-qa-deployment-$(date +%Y%m%d-%H%M%S)"
+DEPLOYMENT_NAME="repuestera-sqlite-deployment-$(date +%Y%m%d-%H%M%S)"
 
 # Colores para output
 RED='\033[0;31m'
@@ -17,7 +17,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}🚀 Desplegando infraestructura QA de Repuestera${NC}"
+echo -e "${GREEN}🚀 Desplegando infraestructura SQLite de Repuestera${NC}"
 echo "=================================================="
 
 # Verificar que el usuario está logueado en Azure
@@ -65,7 +65,7 @@ fi
 echo -e "${GREEN}✅ Template validado correctamente${NC}"
 
 # Desplegar la infraestructura
-echo -e "${YELLOW}🚀 Desplegando infraestructura QA...${NC}"
+echo -e "${YELLOW}🚀 Desplegando infraestructura SQLite...${NC}"
 echo "Esto puede tomar varios minutos..."
 
 az deployment group create \
@@ -76,7 +76,7 @@ az deployment group create \
 
 # Verificar el resultado del despliegue
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}🎉 ¡Infraestructura QA desplegada exitosamente!${NC}"
+    echo -e "${GREEN}🎉 ¡Infraestructura SQLite desplegada exitosamente!${NC}"
     
     # Mostrar los outputs
     echo -e "${YELLOW}📋 Información de los recursos creados:${NC}"
@@ -90,7 +90,11 @@ if [ $? -eq 0 ]; then
     echo -e "${YELLOW}💡 Próximos pasos:${NC}"
     echo "1. Ejecutar el pipeline de Azure DevOps"
     echo "2. Verificar que las aplicaciones se despliegan correctamente"
-    echo "3. Probar la funcionalidad en el ambiente QA"
+    echo "3. Probar la funcionalidad en el ambiente SQLite"
+    echo ""
+    echo -e "${GREEN}🌐 URLs de acceso:${NC}"
+    echo "Backend: https://repuestera-mfrias-qa-api.azurewebsites.net"
+    echo "Frontend: https://repuestera-mfrias-qa-web.azurewebsites.net"
 else
     echo -e "${RED}❌ Error en el despliegue de la infraestructura${NC}"
     exit 1

@@ -9,16 +9,21 @@ const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const userRoutes = require('./routes/users');
 
-// Inicializar base de datos
-const { testConnection } = require('./config/database');
+// Inicializar base de datos (SQLite o Azure SQL según configuración)
+const { testConnection, initializeTables } = require('./config/database');
 
-// Probar conexión a MySQL al iniciar
+// Probar conexión a la base de datos al iniciar
 testConnection().then(success => {
   if (success) {
-    console.log('✅ Base de datos MySQL conectada correctamente');
+    console.log('✅ Base de datos conectada correctamente');
+    // Inicializar tablas si no existen
+    return initializeTables();
   } else {
-    console.error('❌ Error conectando a la base de datos MySQL');
+    console.error('❌ Error conectando a la base de datos');
+    throw new Error('No se pudo conectar a la base de datos');
   }
+}).then(() => {
+  console.log('✅ Tablas inicializadas correctamente');
 }).catch(console.error);
 
 const app = express();

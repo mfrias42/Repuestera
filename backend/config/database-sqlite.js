@@ -2,14 +2,28 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 require('dotenv').config();
 
-// Configuración de SQLite para Azure
-const dbPath = path.join(__dirname, '..', 'data', 'repuestera.db');
+// Configuración de SQLite para Azure App Service
+let dbPath;
+if (process.env.NODE_ENV === 'production' && process.env.WEBSITE_SITE_NAME) {
+  // En Azure App Service, usar el directorio local persistente
+  // Azure App Service tiene un directorio /home que es persistente
+  dbPath = process.env.DB_PATH || path.join('/home', 'data', 'repuestera.db');
+} else {
+  // En desarrollo local
+  dbPath = path.join(__dirname, '..', 'data', 'repuestera.db');
+}
+
+console.log('📍 Ruta de base de datos SQLite:', dbPath);
+console.log('🌍 Entorno:', process.env.NODE_ENV);
+console.log('🏠 HOME directory:', process.env.HOME);
+console.log('🌐 Website name:', process.env.WEBSITE_SITE_NAME);
 
 // Crear directorio data si no existe
 const fs = require('fs');
 const dataDir = path.dirname(dbPath);
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
+  console.log('📁 Directorio de datos creado:', dataDir);
 }
 
 // Crear conexión SQLite
@@ -113,6 +127,11 @@ async function executeTransaction(queries) {
 // Inicializar tablas
 async function initializeTables() {
   try {
+    console.log('🔧 Inicializando tablas SQLite...');
+    
+    // Verificar que la base de datos esté accesible
+    await testConnection();
+    console.log('✅ Conexión verificada antes de crear tablas');
     // Crear tabla de usuarios
     await executeQuery(`
       CREATE TABLE IF NOT EXISTS usuarios (

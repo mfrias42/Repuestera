@@ -75,6 +75,30 @@
             {
               "name": "PORT",
               "value": "8080"
+            },
+            {
+              "name": "JWT_SECRET",
+              "value": "tu_jwt_secret_super_seguro_para_produccion_2024"
+            },
+            {
+              "name": "JWT_REFRESH_SECRET",
+              "value": "tu_jwt_refresh_secret_super_seguro_para_produccion_2024"
+            },
+            {
+              "name": "UPLOAD_PATH",
+              "value": "./uploads"
+            },
+            {
+              "name": "MAX_FILE_SIZE",
+              "value": "5242880"
+            },
+            {
+              "name": "DB_TYPE",
+              "value": "sqlite"
+            },
+            {
+              "name": "DB_PATH",
+              "value": "/home/data/repuestera_qa.db"
             }
           ]
         }

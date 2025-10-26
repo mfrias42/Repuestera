@@ -37,13 +37,48 @@
       "metadata": {
         "description": "Versión de Node.js"
       }
+    },
+    "sqlServerAdminLogin": {
+      "type": "string",
+      "defaultValue": "repuestera_admin",
+      "metadata": {
+        "description": "Nombre de usuario administrador de SQL Server"
+      }
+    },
+    "sqlServerAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Contraseña del administrador de SQL Server"
+      }
+    },
+    "sqlDatabaseSku": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "allowedValues": [
+        "Basic",
+        "S0",
+        "S1",
+        "S2",
+        "S3",
+        "P1",
+        "P2",
+        "P4",
+        "P6",
+        "P11",
+        "P15"
+      ],
+      "metadata": {
+        "description": "SKU de Azure SQL Database"
+      }
     }
   },
   "variables": {
     "appServicePlanName": "[concat(parameters('appNamePrefix'), '-plan')]",
     "backendAppName": "[concat(parameters('appNamePrefix'), '-api')]",
     "frontendAppName": "[concat(parameters('appNamePrefix'), '-web')]",
-    "applicationInsightsName": "[concat(parameters('appNamePrefix'), '-insights')]"
+    "applicationInsightsName": "[concat(parameters('appNamePrefix'), '-insights')]",
+    "sqlServerName": "[concat(parameters('appNamePrefix'), '-sql-server')]",
+    "sqlDatabaseName": "repuestera_db"
   },
   "resources": [
     {
@@ -71,13 +106,54 @@
       }
     },
     {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2021-11-01",
+      "name": "[variables('sqlServerName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "administratorLogin": "[parameters('sqlServerAdminLogin')]",
+        "administratorLoginPassword": "[parameters('sqlServerAdminPassword')]",
+        "version": "12.0"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2021-11-01",
+      "name": "[concat(variables('sqlServerName'), '/AllowAzureServices')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('sqlServerName'))]"
+      ],
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2021-11-01",
+      "name": "[concat(variables('sqlServerName'), '/', variables('sqlDatabaseName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('sqlServerName'))]",
+        "[resourceId('Microsoft.Sql/servers/firewallRules', variables('sqlServerName'), 'AllowAzureServices')]"
+      ],
+      "properties": {
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "maxSizeBytes": 1073741824,
+        "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+        "zoneRedundant": false,
+        "readScale": "Disabled",
+        "requestedServiceObjectiveName": "[parameters('sqlDatabaseSku')]"
+      }
+    },
+    {
       "type": "Microsoft.Web/sites",
       "apiVersion": "2021-02-01",
       "name": "[variables('backendAppName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
-        "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]"
+        "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]",
+        "[resourceId('Microsoft.Sql/servers/databases', variables('sqlServerName'), variables('sqlDatabaseName'))]"
       ],
       "kind": "app,linux",
       "properties": {
@@ -111,11 +187,35 @@
             },
             {
               "name": "DB_TYPE",
-              "value": "sqlite"
+              "value": "sqlserver"
             },
             {
-              "name": "DB_PATH",
-              "value": "/home/data/repuestera.db"
+              "name": "DB_HOST",
+              "value": "[concat(variables('sqlServerName'), '.database.windows.net')]"
+            },
+            {
+              "name": "DB_USER",
+              "value": "[parameters('sqlServerAdminLogin')]"
+            },
+            {
+              "name": "DB_PASSWORD",
+              "value": "[parameters('sqlServerAdminPassword')]"
+            },
+            {
+              "name": "DB_NAME",
+              "value": "[variables('sqlDatabaseName')]"
+            },
+            {
+              "name": "DB_PORT",
+              "value": "1433"
+            },
+            {
+              "name": "JWT_SECRET",
+              "value": "tu_jwt_secret_super_seguro_para_produccion_2024"
+            },
+            {
+              "name": "JWT_REFRESH_SECRET",
+              "value": "tu_jwt_refresh_secret_super_seguro_para_produccion_2024"
             }
           ],
           "cors": {
@@ -156,6 +256,10 @@
               "value": "18.17.0"
             },
             {
+              "name": "REACT_APP_API_URL",
+              "value": "[concat('https://', variables('backendAppName'), '.azurewebsites.net/api')]"
+            },
+            {
               "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
               "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))).InstrumentationKey]"
             },
@@ -182,13 +286,21 @@
       "type": "string",
       "value": "[resourceGroup().name]"
     },
+    "sqlServerName": {
+      "type": "string",
+      "value": "[variables('sqlServerName')]"
+    },
+    "sqlServerFqdn": {
+      "type": "string",
+      "value": "[concat(variables('sqlServerName'), '.database.windows.net')]"
+    },
+    "sqlDatabaseName": {
+      "type": "string",
+      "value": "[variables('sqlDatabaseName')]"
+    },
     "databaseType": {
       "type": "string",
-      "value": "SQLite"
-    },
-    "databasePath": {
-      "type": "string",
-      "value": "/home/data/repuestera.db"
+      "value": "Azure SQL Database"
     }
   }
 }

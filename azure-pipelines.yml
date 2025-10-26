@@ -8,21 +8,21 @@ trigger:
 variables:
   # Configuración de Azure
   azureSubscription: 'Azure-Service-Connection'
-  resourceGroupName: 'rg-repuestera'
+  resourceGroupName: 'rg-repuestera-qa'
   location: 'Brazil South'
   
   # Configuración de Node.js
   nodeVersion: '20.x'
   
-  # Variables QA
-  webAppNameBackendQA: 'repuestera-mfrias-qa-api'
-  webAppNameFrontendQA: 'repuestera-mfrias-qa-web'
-  apiUrlQA: 'https://repuestera-mfrias-qa-api.azurewebsites.net/api'
+  # Variables QA (usando recursos existentes)
+  webAppNameBackendQA: 'repuestera-api'
+  webAppNameFrontendQA: 'repuestera-web'
+  apiUrlQA: 'https://repuestera-api.azurewebsites.net/api'
   
-  # Variables Producción (recursos existentes)
-  webAppNameBackendProd: 'repuestera-api-mfrias'
-  webAppNameFrontendProd: 'repuestera-web-mfrias'
-  apiUrlProd: 'https://repuestera-api-mfrias.azurewebsites.net/api'
+  # Variables Producción (usando recursos existentes)
+  webAppNameBackendProd: 'repuestera-api'
+  webAppNameFrontendProd: 'repuestera-web'
+  apiUrlProd: 'https://repuestera-api.azurewebsites.net/api'
 
 stages:
 - stage: Build
@@ -198,28 +198,33 @@ stages:
                     "slotSetting": false
                   },
                   {
+                    "name": "DB_TYPE",
+                    "value": "mysql",
+                    "slotSetting": false
+                  },
+                  {
                     "name": "DB_HOST",
-                    "value": "repuestera-mfrias-qa-server.mysql.database.azure.com",
+                    "value": "manufrias.mysql.database.azure.com",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_USER",
+                    "value": "A",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_PASSWORD",
+                    "value": "4286Pka1#",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_NAME",
+                    "value": "repuestera_db",
                     "slotSetting": false
                   },
                   {
                     "name": "DB_PORT",
                     "value": "3306",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_NAME",
-                    "value": "repuestera_qa_db",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_USER",
-                    "value": "qa_admin",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_PASSWORD",
-                    "value": "QA_SecurePass2024!",
                     "slotSetting": false
                   },
                   {
@@ -243,7 +248,7 @@ stages:
               resourceGroupName: $(resourceGroupName)
               package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
               runtimeStack: 'NODE|20-lts'
-              startUpCommand: 'cd /home/site/wwwroot && npm run init-db-qa && npm start'
+              startUpCommand: 'cd /home/site/wwwroot && npm start'
             displayName: 'Initialize QA Database and Start Backend'
 
   - deployment: DeployFrontendQA
@@ -351,28 +356,33 @@ stages:
                     "slotSetting": false
                   },
                   {
+                    "name": "DB_TYPE",
+                    "value": "mysql",
+                    "slotSetting": false
+                  },
+                  {
                     "name": "DB_HOST",
-                    "value": "repuestera-server-mfrias.mysql.database.azure.com",
+                    "value": "manufrias.mysql.database.azure.com",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_USER",
+                    "value": "A",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_PASSWORD",
+                    "value": "4286Pka1#",
+                    "slotSetting": false
+                  },
+                  {
+                    "name": "DB_NAME",
+                    "value": "repuestera_db",
                     "slotSetting": false
                   },
                   {
                     "name": "DB_PORT",
                     "value": "3306",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_NAME",
-                    "value": "repuestera_prod_db",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_USER",
-                    "value": "prod_admin",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_PASSWORD",
-                    "value": "Prod_SecurePass2024!",
                     "slotSetting": false
                   },
                   {
@@ -396,7 +406,7 @@ stages:
               resourceGroupName: $(resourceGroupName)
               package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
               runtimeStack: 'NODE|20-lts'
-              startUpCommand: 'cd /home/site/wwwroot && npm run init-db-prod && npm start'
+              startUpCommand: 'cd /home/site/wwwroot && npm start'
             displayName: 'Initialize Production Database and Start Backend'
 
   - deployment: DeployFrontendProd

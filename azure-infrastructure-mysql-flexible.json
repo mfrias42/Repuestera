@@ -37,13 +37,42 @@
       "metadata": {
         "description": "Versión de Node.js"
       }
+    },
+    "mysqlAdminLogin": {
+      "type": "string",
+      "defaultValue": "A",
+      "metadata": {
+        "description": "Nombre de usuario administrador de MySQL"
+      }
+    },
+    "mysqlAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Contraseña del administrador de MySQL"
+      }
+    },
+    "mysqlSku": {
+      "type": "string",
+      "defaultValue": "Standard_D2s_v3",
+      "allowedValues": [
+        "Standard_B1ms",
+        "Standard_B2s",
+        "Standard_B2ms",
+        "Standard_D2s_v3",
+        "Standard_D4s_v3"
+      ],
+      "metadata": {
+        "description": "SKU de MySQL Flexible Server (Standard workload)"
+      }
     }
   },
   "variables": {
     "appServicePlanName": "[concat(parameters('appNamePrefix'), '-plan')]",
     "backendAppName": "[concat(parameters('appNamePrefix'), '-api')]",
     "frontendAppName": "[concat(parameters('appNamePrefix'), '-web')]",
-    "applicationInsightsName": "[concat(parameters('appNamePrefix'), '-insights')]"
+    "applicationInsightsName": "[concat(parameters('appNamePrefix'), '-insights')]",
+    "mysqlServerName": "[concat(parameters('appNamePrefix'), '-mysql-server')]",
+    "mysqlDatabaseName": "repuestera_db"
   },
   "resources": [
     {
@@ -71,13 +100,66 @@
       }
     },
     {
+      "type": "Microsoft.DBforMySQL/flexibleServers",
+      "apiVersion": "2021-12-01-preview",
+      "name": "[variables('mysqlServerName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('mysqlSku')]",
+        "tier": "Burstable"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('mysqlAdminLogin')]",
+        "administratorLoginPassword": "[parameters('mysqlAdminPassword')]",
+        "version": "8.0.21",
+        "storage": {
+          "storageSizeGB": 20,
+          "iops": 360,
+          "autoGrow": "Enabled"
+        },
+        "backup": {
+          "backupRetentionDays": 7,
+          "geoRedundantBackup": "Disabled"
+        },
+        "highAvailability": {
+          "mode": "SameZone"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DBforMySQL/flexibleServers/databases",
+      "apiVersion": "2021-12-01-preview",
+      "name": "[concat(variables('mysqlServerName'), '/', variables('mysqlDatabaseName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforMySQL/flexibleServers', variables('mysqlServerName'))]"
+      ],
+      "properties": {
+        "charset": "utf8",
+        "collation": "utf8_general_ci"
+      }
+    },
+    {
+      "type": "Microsoft.DBforMySQL/flexibleServers/firewallRules",
+      "apiVersion": "2021-12-01-preview",
+      "name": "[concat(variables('mysqlServerName'), '/AllowAzureServices')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforMySQL/flexibleServers', variables('mysqlServerName'))]"
+      ],
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      }
+    },
+    {
       "type": "Microsoft.Web/sites",
       "apiVersion": "2021-02-01",
       "name": "[variables('backendAppName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
-        "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]"
+        "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]",
+        "[resourceId('Microsoft.DBforMySQL/flexibleServers', variables('mysqlServerName'))]",
+        "[resourceId('Microsoft.DBforMySQL/flexibleServers/databases', variables('mysqlServerName'), variables('mysqlDatabaseName'))]"
       ],
       "kind": "app,linux",
       "properties": {
@@ -111,11 +193,35 @@
             },
             {
               "name": "DB_TYPE",
-              "value": "sqlite"
+              "value": "mysql"
             },
             {
-              "name": "DB_PATH",
-              "value": "/home/data/repuestera.db"
+              "name": "DB_HOST",
+              "value": "[concat(variables('mysqlServerName'), '.mysql.database.azure.com')]"
+            },
+            {
+              "name": "DB_USER",
+              "value": "[parameters('mysqlAdminLogin')]"
+            },
+            {
+              "name": "DB_PASSWORD",
+              "value": "[parameters('mysqlAdminPassword')]"
+            },
+            {
+              "name": "DB_NAME",
+              "value": "[variables('mysqlDatabaseName')]"
+            },
+            {
+              "name": "DB_PORT",
+              "value": "3306"
+            },
+            {
+              "name": "JWT_SECRET",
+              "value": "mysql_flexible_jwt_secret_2024"
+            },
+            {
+              "name": "JWT_REFRESH_SECRET",
+              "value": "mysql_flexible_jwt_refresh_secret_2024"
             }
           ],
           "cors": {
@@ -156,6 +262,10 @@
               "value": "18.17.0"
             },
             {
+              "name": "REACT_APP_API_URL",
+              "value": "[concat('https://', variables('backendAppName'), '.azurewebsites.net/api')]"
+            },
+            {
               "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
               "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))).InstrumentationKey]"
             },
@@ -182,13 +292,21 @@
       "type": "string",
       "value": "[resourceGroup().name]"
     },
+    "mysqlServerName": {
+      "type": "string",
+      "value": "[variables('mysqlServerName')]"
+    },
+    "mysqlServerFqdn": {
+      "type": "string",
+      "value": "[concat(variables('mysqlServerName'), '.mysql.database.azure.com')]"
+    },
+    "mysqlDatabaseName": {
+      "type": "string",
+      "value": "[variables('mysqlDatabaseName')]"
+    },
     "databaseType": {
       "type": "string",
-      "value": "SQLite"
-    },
-    "databasePath": {
-      "type": "string",
-      "value": "/home/data/repuestera.db"
+      "value": "Azure Database for MySQL Flexible Server"
     }
   }
 }
