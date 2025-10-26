@@ -11,19 +11,20 @@ const userRoutes = require('./routes/users');
 
 // Inicializar base de datos MySQL
 const { testConnection, initializeTables } = require('./config/database-mysql');
+const { fixDatabase } = require('./scripts/fixDatabase');
 
 // Probar conexión a la base de datos al iniciar
 testConnection().then(success => {
   if (success) {
     console.log('✅ Base de datos conectada correctamente');
-    // Inicializar tablas si no existen
-    return initializeTables();
+    // Ejecutar reparación de base de datos
+    return fixDatabase();
   } else {
     console.error('❌ Error conectando a la base de datos');
     throw new Error('No se pudo conectar a la base de datos');
   }
 }).then(() => {
-  console.log('✅ Tablas inicializadas correctamente');
+  console.log('✅ Base de datos reparada correctamente');
 }).catch(console.error);
 
 const app = express();
@@ -83,7 +84,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/test', testRoutes);
 
 // Ruta de prueba con verificación de base de datos
 app.get('/api/health', async (req, res) => {
