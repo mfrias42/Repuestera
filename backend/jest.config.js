@@ -54,6 +54,19 @@ module.exports = {
   // Reportes de cobertura
   coverageReporters: ['text', 'lcov', 'html', 'cobertura'],
   
+  // Reporters para resultados de tests
+  reporters: process.env.CI === 'true' 
+    ? ['default', ['jest-junit', {
+        outputDirectory: process.env.JEST_JUNIT_OUTPUT_DIR || '.',
+        outputName: process.env.JEST_JUNIT_OUTPUT_NAME || 'junit.xml',
+        suiteName: 'Backend Tests',
+        classNameTemplate: '{classname}',
+        titleTemplate: '{title}',
+        ancestorSeparator: ' › ',
+        usePathForSuiteName: 'true'
+      }]]
+    : ['default'],
+  
   // Configuración para CI/CD
   ci: process.env.CI === 'true',
   

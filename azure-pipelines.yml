@@ -50,12 +50,26 @@ stages:
         npm run test:ci
       displayName: 'Ejecutar pruebas del backend'
       continueOnError: false
+      env:
+        CI: 'true'
+        JEST_JUNIT_OUTPUT_DIR: '$(System.DefaultWorkingDirectory)/backend'
+        JEST_JUNIT_OUTPUT_NAME: 'junit.xml'
     
     - script: |
         cd backend
         npm run test:coverage
       displayName: 'Generar reporte de cobertura del backend'
       continueOnError: false
+    
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '$(System.DefaultWorkingDirectory)/backend/junit.xml'
+        testRunTitle: 'Backend Tests (197 tests)'
+        mergeTestResults: false
+        failTaskOnFailedTests: false
+      displayName: 'Publicar resultados de tests del backend'
+      continueOnError: true
     
     - task: PublishCodeCoverageResults@1
       inputs:
