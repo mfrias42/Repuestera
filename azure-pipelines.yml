@@ -1,6 +1,7 @@
 # Azure DevOps Release Pipeline para Repuestera
 # Despliegue multi-ambiente: QA → Producción
-# TP05 - Ingeniería de Software 3
+# TP06 - Pruebas Unitarias con CI/CD
+# Tests automáticos antes de cada despliegue
 
 trigger:
 - main
@@ -46,9 +47,24 @@ stages:
     
     - script: |
         cd backend
-        npm run test
+        npm run test:ci
       displayName: 'Ejecutar pruebas del backend'
       continueOnError: false
+    
+    - script: |
+        cd backend
+        npm run test:coverage
+      displayName: 'Generar reporte de cobertura del backend'
+      continueOnError: false
+    
+    - task: PublishCodeCoverageResults@1
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/backend/coverage/cobertura-coverage.xml'
+        reportDirectory: '$(System.DefaultWorkingDirectory)/backend/coverage'
+        failIfCoverageEmpty: false
+      displayName: 'Publicar reporte de cobertura del backend'
+      continueOnError: true
 
     - task: ArchiveFiles@2
       inputs:
@@ -80,8 +96,29 @@ stages:
     - script: |
         cd frontend
         npm install
+      displayName: 'Instalar dependencias del frontend'
+    
+    - script: |
+        cd frontend
+        CI=true npm test -- --watchAll=false --coverage --coverageReporters=text --coverageReporters=lcov
+      displayName: 'Ejecutar pruebas del frontend'
+      continueOnError: false
+      env:
+        CI: 'true'
+    
+    - task: PublishCodeCoverageResults@1
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/frontend/coverage/lcov.info'
+        reportDirectory: '$(System.DefaultWorkingDirectory)/frontend/coverage'
+        failIfCoverageEmpty: false
+      displayName: 'Publicar reporte de cobertura del frontend'
+      continueOnError: true
+    
+    - script: |
+        cd frontend
         npm run build
-      displayName: 'Instalar dependencias y construir para QA'
+      displayName: 'Construir frontend para QA'
       env:
         REACT_APP_API_URL: $(apiUrlQA)
         NODE_ENV: 'production'
@@ -116,8 +153,20 @@ stages:
     - script: |
         cd frontend
         npm install
+      displayName: 'Instalar dependencias del frontend'
+    
+    - script: |
+        cd frontend
+        CI=true npm test -- --watchAll=false
+      displayName: 'Ejecutar pruebas del frontend (validación)'
+      continueOnError: false
+      env:
+        CI: 'true'
+
+    - script: |
+        cd frontend
         npm run build
-      displayName: 'Instalar dependencias y construir para Producción'
+      displayName: 'Construir frontend para Producción'
       env:
         REACT_APP_API_URL: $(apiUrlProd)
         NODE_ENV: 'production'
