@@ -71,7 +71,7 @@ stages:
       displayName: 'Publicar resultados de tests del backend'
       continueOnError: true
     
-    - task: PublishCodeCoverageResults@1
+    - task: PublishCodeCoverageResults@2
       inputs:
         codeCoverageTool: 'Cobertura'
         summaryFileLocation: '$(System.DefaultWorkingDirectory)/backend/coverage/cobertura-coverage.xml'
@@ -121,7 +121,7 @@ stages:
         CI: 'true'
         NODE_ENV: 'test'
     
-    - task: PublishCodeCoverageResults@1
+    - task: PublishCodeCoverageResults@2
       inputs:
         codeCoverageTool: 'Cobertura'
         summaryFileLocation: '$(System.DefaultWorkingDirectory)/frontend/coverage/lcov.info'
