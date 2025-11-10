@@ -278,8 +278,3 @@ sonar.javascript.lcov.reportPaths=frontend/coverage/lcov.info,backend/coverage/l
 ```
 
 ---
-
-**Fecha de análisis**: 10 de noviembre de 2025
-**Proyecto**: Repuestera - Sistema de Gestión Full Stack
-**Alumno**: Martina Becerra
-**TP**: 7 - Code Coverage y Calidad de Código
