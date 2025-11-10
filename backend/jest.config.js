@@ -42,9 +42,8 @@ module.exports = {
   },
   
   // Configuración de reportes de cobertura
-  collectCoverage: true,
-  coverageReporters: ['text', 'lcov', 'cobertura'],
   coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'html', 'cobertura'],
   
   // Variables de entorno para tests
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js'],
@@ -57,12 +56,6 @@ module.exports = {
   
   // Restaurar mocks después de cada test
   restoreMocks: true,
-  
-  // Mostrar cobertura (se activa con flag --coverage)
-  collectCoverage: false,
-  
-  // Reportes de cobertura
-  coverageReporters: ['text', 'lcov', 'html', 'cobertura'],
   
   // Reporters para resultados de tests
   reporters: process.env.CI === 'true' 
