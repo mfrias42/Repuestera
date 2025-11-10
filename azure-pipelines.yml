@@ -25,6 +25,12 @@ variables:
   webAppNameFrontendProd: 'repuestera-web-prod'
   apiUrlProd: 'https://repuestera-api-prod.azurewebsites.net/api'
 
+  # Variables SonarCloud
+  sonarCloudServiceConnection: 'SonarCloud'
+  sonarCloudOrganization: 'mfrias42'
+  sonarCloudProjectKey: 'mfrias42_tp05'
+  sonarCloudProjectName: 'tp05'
+
 stages:
 - stage: Build
   displayName: 'Construcción'
@@ -35,6 +41,25 @@ stages:
       vmImage: 'ubuntu-latest'
     
     steps:
+    - checkout: self
+      fetchDepth: 0
+    
+    - task: SonarCloudPrepare@3
+      displayName: 'Preparar análisis de SonarCloud'
+      inputs:
+        SonarCloud: $(sonarCloudServiceConnection)
+        organization: $(sonarCloudOrganization)
+        scannerMode: 'CLI'
+        configMode: 'manual'
+        cliProjectKey: $(sonarCloudProjectKey)
+        cliProjectName: $(sonarCloudProjectName)
+        cliSources: '.'
+        extraProperties: |
+          sonar.javascript.lcov.reportPaths=backend/coverage/lcov.info,frontend/coverage/lcov.info
+          sonar.exclusions=**/node_modules/**,**/coverage/**,**/build/**,**/*.test.js,**/tests/**,**/setupTests.js,**/reportWebVitals.js
+          sonar.test.inclusions=**/*.test.js,**/__tests__/**
+          sonar.sources=backend,frontend/src
+    
     - task: NodeTool@0
       inputs:
         versionSpec: $(nodeVersion)
@@ -79,6 +104,14 @@ stages:
         failIfCoverageEmpty: false
       displayName: 'Publicar reporte de cobertura del backend'
       continueOnError: true
+    
+    - task: SonarCloudAnalyze@3
+      displayName: 'Ejecutar análisis de código'
+
+    - task: SonarCloudPublish@3
+      displayName: 'Publicar resultados a SonarCloud'
+      inputs:
+        pollingTimeoutSec: '300'
 
     - task: ArchiveFiles@2
       inputs:
@@ -95,113 +128,6 @@ stages:
         ArtifactName: 'backend-drop'
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del backend'
-
-  - job: BuildFrontendQA
-    displayName: 'Construir Frontend para QA'
-    pool:
-      vmImage: 'ubuntu-latest'
-    
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: $(nodeVersion)
-      displayName: 'Instalar Node.js $(nodeVersion)'
-
-    - script: |
-        cd frontend
-        npm install
-      displayName: 'Instalar dependencias del frontend'
-    
-    - script: |
-        cd frontend
-        CI=true npm test -- --watchAll=false --passWithNoTests --testPathIgnorePatterns="App.test.js|ProtectedRoute.test.js|AuthContext.test.js" --testPathPattern="services/__tests__" || echo "Tests de frontend opcionales - en progreso"
-      displayName: 'Ejecutar pruebas del frontend (opcionales)'
-      continueOnError: true
-      env:
-        CI: 'true'
-        NODE_ENV: 'test'
-    
-    - task: PublishCodeCoverageResults@2
-      inputs:
-        codeCoverageTool: 'Cobertura'
-        summaryFileLocation: '$(System.DefaultWorkingDirectory)/frontend/coverage/lcov.info'
-        reportDirectory: '$(System.DefaultWorkingDirectory)/frontend/coverage'
-        failIfCoverageEmpty: false
-      displayName: 'Publicar reporte de cobertura del frontend'
-      continueOnError: true
-    
-    - script: |
-        cd frontend
-        npm run build
-      displayName: 'Construir frontend para QA'
-      env:
-        REACT_APP_API_URL: $(apiUrlQA)
-        NODE_ENV: 'production'
-
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: 'frontend/build'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/frontend-qa.zip'
-        replaceExistingArchive: true
-      displayName: 'Comprimir build del frontend QA'
-
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)/frontend-qa.zip'
-        ArtifactName: 'frontend-qa-drop'
-        publishLocation: 'Container'
-      displayName: 'Publicar artefacto del frontend QA'
-
-  - job: BuildFrontendProd
-    displayName: 'Construir Frontend para Producción'
-    pool:
-      vmImage: 'ubuntu-latest'
-    
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: $(nodeVersion)
-      displayName: 'Instalar Node.js $(nodeVersion)'
-
-    - script: |
-        cd frontend
-        npm install
-      displayName: 'Instalar dependencias del frontend'
-    
-    - script: |
-        cd frontend
-        CI=true npm test -- --watchAll=false --passWithNoTests --testPathIgnorePatterns="App.test.js|ProtectedRoute.test.js|AuthContext.test.js" --testPathPattern="services/__tests__" || echo "Tests de frontend opcionales - en progreso"
-      displayName: 'Ejecutar pruebas del frontend (validación - opcionales)'
-      continueOnError: true
-      env:
-        CI: 'true'
-        NODE_ENV: 'test'
-
-    - script: |
-        cd frontend
-        npm run build
-      displayName: 'Construir frontend para Producción'
-      env:
-        REACT_APP_API_URL: $(apiUrlProd)
-        NODE_ENV: 'production'
-
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: 'frontend/build'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/frontend-prod.zip'
-        replaceExistingArchive: true
-      displayName: 'Comprimir build del frontend Producción'
-
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)/frontend-prod.zip'
-        ArtifactName: 'frontend-prod-drop'
-        publishLocation: 'Container'
-      displayName: 'Publicar artefacto del frontend Producción'
 
 # ============================================================================
 # STAGE QA - Despliegue Automático para Testing
