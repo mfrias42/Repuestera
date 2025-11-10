@@ -44,7 +44,7 @@ stages:
     - checkout: self
       fetchDepth: 0
     
-    - task: SonarCloudPrepare@2
+    - task: SonarCloudPrepare@3
       displayName: 'Preparar análisis de SonarCloud'
       inputs:
         SonarCloud: $(sonarCloudServiceConnection)
@@ -105,12 +105,10 @@ stages:
       displayName: 'Publicar reporte de cobertura del backend'
       continueOnError: true
     
-    - task: SonarCloudAnalyze@2
+    - task: SonarCloudAnalyze@3
       displayName: 'Ejecutar análisis de código'
-      inputs:
-        jdkversion: 'JAVA_HOME_17_X64'
 
-    - task: SonarCloudPublish@2
+    - task: SonarCloudPublish@3
       displayName: 'Publicar resultados a SonarCloud'
       inputs:
         pollingTimeoutSec: '300'
