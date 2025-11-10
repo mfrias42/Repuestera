@@ -22,7 +22,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "test:ci": "CI=true react-scripts test --watchAll=false --coverage --coverageReporters=text --coverageReporters=lcov",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "test:ci": "CI=true react-scripts test --coverage --watchAll=false --testResultsProcessor=jest-junit",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
