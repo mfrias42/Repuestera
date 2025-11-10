@@ -26,15 +26,20 @@ module.exports = {
     '!**/scripts/**'
   ],
   
-  // Umbrales de cobertura (opcional, se puede ajustar)
+  // Umbrales de cobertura requeridos para el TP7 (mínimo 70%)
   coverageThreshold: {
     global: {
-      branches: 50,
-      functions: 50,
-      lines: 50,
-      statements: 50
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70
     }
   },
+  
+  // Configuración de reportes de cobertura
+  collectCoverage: true,
+  coverageReporters: ['text', 'lcov', 'cobertura'],
+  coverageDirectory: 'coverage',
   
   // Variables de entorno para tests
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js'],
