@@ -50,15 +50,9 @@ stages:
         SonarCloud: $(sonarCloudServiceConnection)
         organization: $(sonarCloudOrganization)
         scannerMode: 'CLI'
-        configMode: 'manual'
+        configMode: 'file'
         cliProjectKey: $(sonarCloudProjectKey)
         cliProjectName: $(sonarCloudProjectName)
-        cliSources: '.'
-        extraProperties: |
-          sonar.javascript.lcov.reportPaths=backend/coverage/lcov.info,frontend/coverage/lcov.info
-          sonar.exclusions=**/node_modules/**,**/coverage/**,**/build/**,**/*.test.js,**/tests/**,**/setupTests.js,**/reportWebVitals.js
-          sonar.test.inclusions=**/*.test.js,**/__tests__/**
-          sonar.sources=backend,frontend/src
     
     - task: NodeTool@0
       inputs:
