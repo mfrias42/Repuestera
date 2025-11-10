@@ -25,6 +25,12 @@ variables:
   webAppNameFrontendProd: 'repuestera-web-prod'
   apiUrlProd: 'https://repuestera-api-prod.azurewebsites.net/api'
 
+  # Variables SonarCloud
+  sonarCloudServiceConnection: 'SonarCloud'
+  sonarCloudOrganization: 'mfrias42'
+  sonarCloudProjectKey: 'mfrias42_tp05'
+  sonarCloudProjectName: 'tp05'
+
 stages:
 - stage: Build
   displayName: 'Construcción'
@@ -35,6 +41,25 @@ stages:
       vmImage: 'ubuntu-latest'
     
     steps:
+    - checkout: self
+      fetchDepth: 0
+    
+    - task: SonarCloudPrepare@3
+      displayName: 'Preparar análisis de SonarCloud'
+      inputs:
+        SonarCloud: $(sonarCloudServiceConnection)
+        organization: $(sonarCloudOrganization)
+        scannerMode: 'CLI'
+        configMode: 'manual'
+        cliProjectKey: $(sonarCloudProjectKey)
+        cliProjectName: $(sonarCloudProjectName)
+        cliSources: '.'
+        extraProperties: |
+          sonar.javascript.lcov.reportPaths=backend/coverage/lcov.info,frontend/coverage/lcov.info
+          sonar.exclusions=**/node_modules/**,**/coverage/**,**/build/**,**/*.test.js,**/tests/**,**/setupTests.js,**/reportWebVitals.js
+          sonar.test.inclusions=**/*.test.js,**/__tests__/**
+          sonar.sources=backend,frontend/src
+    
     - task: NodeTool@0
       inputs:
         versionSpec: $(nodeVersion)
@@ -79,6 +104,14 @@ stages:
         failIfCoverageEmpty: false
       displayName: 'Publicar reporte de cobertura del backend'
       continueOnError: true
+    
+    - task: SonarCloudAnalyze@3
+      displayName: 'Ejecutar análisis de código'
+
+    - task: SonarCloudPublish@3
+      displayName: 'Publicar resultados a SonarCloud'
+      inputs:
+        pollingTimeoutSec: '300'
 
     - task: ArchiveFiles@2
       inputs:
@@ -114,8 +147,8 @@ stages:
     
     - script: |
         cd frontend
-        CI=true npm test -- --watchAll=false --passWithNoTests --testPathIgnorePatterns="App.test.js|ProtectedRoute.test.js|AuthContext.test.js" --testPathPattern="services/__tests__" || echo "Tests de frontend opcionales - en progreso"
-      displayName: 'Ejecutar pruebas del frontend (opcionales)'
+        CI=true npm test -- --watchAll=false --coverage --passWithNoTests --testPathIgnorePatterns="App.test.js|ProtectedRoute.test.js|AuthContext.test.js" --testPathPattern="services/__tests__" || echo "Tests de frontend opcionales - en progreso"
+      displayName: 'Ejecutar pruebas del frontend con cobertura'
       continueOnError: true
       env:
         CI: 'true'
@@ -129,6 +162,7 @@ stages:
         failIfCoverageEmpty: false
       displayName: 'Publicar reporte de cobertura del frontend'
       continueOnError: true
+      condition: always()
     
     - script: |
         cd frontend
@@ -172,8 +206,8 @@ stages:
     
     - script: |
         cd frontend
-        CI=true npm test -- --watchAll=false --passWithNoTests --testPathIgnorePatterns="App.test.js|ProtectedRoute.test.js|AuthContext.test.js" --testPathPattern="services/__tests__" || echo "Tests de frontend opcionales - en progreso"
-      displayName: 'Ejecutar pruebas del frontend (validación - opcionales)'
+        CI=true npm test -- --watchAll=false --coverage --passWithNoTests --testPathIgnorePatterns="App.test.js|ProtectedRoute.test.js|AuthContext.test.js" --testPathPattern="services/__tests__" || echo "Tests de frontend opcionales - en progreso"
+      displayName: 'Ejecutar pruebas del frontend (validación con cobertura)'
       continueOnError: true
       env:
         CI: 'true'
