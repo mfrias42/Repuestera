@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Backend Tests" tests="197" failures="0" errors="0" time="0.965">
+  <testsuite name="__tests__/unit/routes/users.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-05T23:37:14" time="0.452" tests="20">
+    <testcase classname="Rutas de Usuarios › GET /api/users" name="debería obtener usuarios con paginación por defecto" time="0.018">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › GET /api/users" name="debería aplicar búsqueda correctamente" time="0.003">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › GET /api/users" name="debería manejar paginación correctamente" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › GET /api/users/:id" name="debería obtener un usuario por ID" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › GET /api/users/:id" name="debería retornar 404 si el usuario no existe" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › PUT /api/users/:id" name="debería actualizar un usuario exitosamente (solo super admin)" time="0.007">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › PUT /api/users/:id" name="debería retornar 404 si el usuario no existe" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › DELETE /api/users/:id" name="debería desactivar un usuario exitosamente (solo super admin)" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › GET /api/users/admins/list" name="debería obtener lista de administradores (solo super admin)" time="0.003">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › POST /api/users/admins" name="debería crear un nuevo administrador (solo super admin)" time="0.003">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › POST /api/users/admins" name="debería retornar error si el email ya existe" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › GET /api/users/categories" name="debería obtener todas las categorías" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › GET /api/users/categories/:id" name="debería obtener una categoría por ID con estadísticas" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › GET /api/users/categories/:id" name="debería retornar 404 si la categoría no existe" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › POST /api/users/categories" name="debería crear una nueva categoría exitosamente" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › POST /api/users/categories" name="debería retornar error si la categoría ya existe" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › PUT /api/users/categories/:id" name="debería actualizar una categoría exitosamente" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › PUT /api/users/categories/:id" name="debería retornar 404 si la categoría no existe" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › DELETE /api/users/categories/:id" name="debería eliminar una categoría sin productos" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Usuarios › DELETE /api/users/categories/:id" name="debería retornar error si la categoría tiene productos" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/routes/products.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-05T23:37:14" time="0.11" tests="18">
+    <testcase classname="Rutas de Productos › GET /api/products" name="debería obtener productos con paginación por defecto" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Productos › GET /api/products" name="debería aplicar filtros de búsqueda correctamente" time="0.004">
+    </testcase>
+    <testcase classname="Rutas de Productos › GET /api/products" name="debería manejar paginación correctamente" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Productos › GET /api/products/:id" name="debería obtener un producto por ID con productos relacionados" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Productos › GET /api/products/:id" name="debería retornar 404 si el producto no existe" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Productos › POST /api/products" name="debería crear un nuevo producto exitosamente" time="0.003">
+    </testcase>
+    <testcase classname="Rutas de Productos › POST /api/products" name="debería retornar error si la categoría no existe" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Productos › POST /api/products" name="debería retornar error si el código de producto ya existe" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Productos › POST /api/products" name="debería retornar error si los años son inválidos" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Productos › PUT /api/products/:id" name="debería actualizar un producto exitosamente" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Productos › PUT /api/products/:id" name="debería retornar 404 si el producto no existe" time="0.009">
+    </testcase>
+    <testcase classname="Rutas de Productos › PATCH /api/products/:id/stock" name="debería actualizar el stock exitosamente" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Productos › PATCH /api/products/:id/stock" name="debería retornar error si el stock es negativo" time="0">
+    </testcase>
+    <testcase classname="Rutas de Productos › DELETE /api/products/:id" name="debería desactivar un producto exitosamente" time="0">
+    </testcase>
+    <testcase classname="Rutas de Productos › DELETE /api/products/:id" name="debería retornar 404 si el producto no existe" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Productos › GET /api/products/reports/low-stock" name="debería obtener productos con stock bajo" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Productos › GET /api/products/reports/low-stock" name="debería usar threshold por defecto de 5" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Productos › GET /api/products/reports/out-of-stock" name="debería obtener productos sin stock" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/routes/auth.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-05T23:37:15" time="0.079" tests="14">
+    <testcase classname="Rutas de Autenticación › POST /api/auth/register" name="debería registrar un nuevo usuario exitosamente" time="0.004">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › POST /api/auth/register" name="debería retornar error si el email ya existe" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › POST /api/auth/register" name="debería retornar error si los datos son inválidos" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › POST /api/auth/login" name="debería iniciar sesión exitosamente con credenciales válidas" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › POST /api/auth/login" name="debería retornar error si el email no existe" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › POST /api/auth/login" name="debería retornar error si la contraseña es incorrecta" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › POST /api/auth/login" name="debería retornar error si el usuario está inactivo" time="0">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › POST /api/auth/login" name="debería retornar error si faltan datos requeridos" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › POST /api/auth/admin/login" name="debería iniciar sesión como administrador exitosamente" time="0.002">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › POST /api/auth/admin/login" name="debería retornar error si las credenciales de admin son inválidas" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › POST /api/auth/logout" name="debería cerrar sesión exitosamente con token válido" time="0">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › POST /api/auth/logout" name="debería retornar error si no se proporciona token" time="0">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › GET /api/auth/me" name="debería retornar información del usuario con token válido" time="0.001">
+    </testcase>
+    <testcase classname="Rutas de Autenticación › GET /api/auth/me" name="debería retornar error si no se proporciona token" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/middleware/auth.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-05T23:37:15" time="0.044" tests="23">
+    <testcase classname="Middleware de Autenticación › verifyToken" name="debería permitir acceso con token válido" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › verifyToken" name="debería rechazar acceso sin header de autorización" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › verifyToken" name="debería rechazar acceso con token inválido" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › verifyToken" name="debería rechazar acceso con token expirado" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › verifyUser" name="debería permitir acceso si el usuario existe y está activo" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › verifyUser" name="debería rechazar acceso si no es tipo user" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › verifyUser" name="debería rechazar acceso si el usuario no existe" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › verifyUser" name="debería rechazar acceso si el usuario está inactivo" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › verifyAdmin" name="debería permitir acceso si el admin existe y está activo" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › verifyAdmin" name="debería rechazar acceso si no es tipo admin" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › verifyAdmin" name="debería rechazar acceso si el admin no existe" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › requirePermission" name="debería permitir acceso si el admin tiene el permiso" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › requirePermission" name="debería rechazar acceso si el admin no tiene el permiso" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › requirePermission" name="debería rechazar acceso si no hay currentAdmin" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › requireSuperAdmin" name="debería permitir acceso si es super admin" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › requireSuperAdmin" name="debería rechazar acceso si no es super admin" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › optionalAuth" name="debería continuar sin autenticación si no hay token" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › optionalAuth" name="debería autenticar si hay token válido" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › optionalAuth" name="debería ignorar token inválido y continuar" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › generateToken" name="debería generar un token JWT válido" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › generateUserToken" name="debería generar un token para usuario" time="0">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › generateAdminToken" name="debería generar un token para administrador" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Autenticación › generateAdminToken" name="debería usar rol por defecto si no se proporciona" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/middleware/upload.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-05T23:37:15" time="0.037" tests="11">
+    <testcase classname="Middleware de Upload › handleMulterError" name="debería manejar error de tamaño de archivo excedido" time="0">
+    </testcase>
+    <testcase classname="Middleware de Upload › handleMulterError" name="debería manejar error de demasiados archivos" time="0">
+    </testcase>
+    <testcase classname="Middleware de Upload › handleMulterError" name="debería manejar error de campo inesperado" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Upload › handleMulterError" name="debería manejar error de tipo de archivo no permitido" time="0">
+    </testcase>
+    <testcase classname="Middleware de Upload › handleMulterError" name="debería pasar otros errores al siguiente middleware" time="0">
+    </testcase>
+    <testcase classname="Middleware de Upload › validateImage" name="debería continuar si no hay archivo" time="0">
+    </testcase>
+    <testcase classname="Middleware de Upload › validateImage" name="debería validar y procesar archivo existente" time="0">
+    </testcase>
+    <testcase classname="Middleware de Upload › validateImage" name="debería eliminar archivo y retornar error si no existe" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Upload › deleteOldImage" name="debería eliminar imagen anterior exitosamente" time="0">
+    </testcase>
+    <testcase classname="Middleware de Upload › deleteOldImage" name="debería hacer nada si no hay ruta de imagen" time="0">
+    </testcase>
+    <testcase classname="Middleware de Upload › deleteOldImage" name="debería manejar error al eliminar sin lanzar excepción" time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/models/Product.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-05T23:37:15" time="0.032" tests="25">
+    <testcase classname="Modelo Product › Constructor" name="debería crear una instancia de Product con los datos proporcionados" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › Product.create()" name="debería crear un nuevo producto exitosamente" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › Product.create()" name="debería manejar campos opcionales como null" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › Product.create()" name="debería lanzar error si no se puede crear el producto" time="0.008">
+    </testcase>
+    <testcase classname="Modelo Product › Product.findById()" name="debería encontrar un producto por ID" time="0.001">
+    </testcase>
+    <testcase classname="Modelo Product › Product.findById()" name="debería retornar null si el producto no existe" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › Product.findByCode()" name="debería encontrar un producto por código" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › Product.findAll()" name="debería obtener todos los productos con opciones por defecto" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › Product.findAll()" name="debería aplicar filtros correctamente" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.update()" name="debería actualizar campos permitidos del producto" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.update()" name="debería lanzar error si no hay campos válidos para actualizar" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.updateStock()" name="debería actualizar el stock correctamente" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.updateStock()" name="debería lanzar error si el stock es negativo" time="0.001">
+    </testcase>
+    <testcase classname="Modelo Product › product.reduceStock()" name="debería reducir el stock correctamente" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.reduceStock()" name="debería lanzar error si la cantidad es menor o igual a 0" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.reduceStock()" name="debería lanzar error si no hay stock suficiente" time="0.001">
+    </testcase>
+    <testcase classname="Modelo Product › product.increaseStock()" name="debería aumentar el stock correctamente" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.increaseStock()" name="debería lanzar error si la cantidad es menor o igual a 0" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.isInStock()" name="debería retornar true si hay stock" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.isInStock()" name="debería retornar false si no hay stock" time="0.001">
+    </testcase>
+    <testcase classname="Modelo Product › product.isLowStock()" name="debería retornar true si el stock está bajo el umbral" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.isLowStock()" name="debería retornar false si el stock está por encima del umbral" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.deactivate()" name="debería desactivar un producto" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › Product.getLowStockProducts()" name="debería obtener productos con stock bajo" time="0">
+    </testcase>
+    <testcase classname="Modelo Product › product.toJSON()" name="debería convertir a JSON con todos los campos necesarios" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/models/User.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-05T23:37:15" time="0.039" tests="23">
+    <testcase classname="Modelo User › Constructor" name="debería crear una instancia de User con los datos proporcionados" time="0.001">
+    </testcase>
+    <testcase classname="Modelo User › User.create()" name="debería crear un nuevo usuario exitosamente" time="0">
+    </testcase>
+    <testcase classname="Modelo User › User.create()" name="debería crear usuario con campos opcionales como null" time="0.001">
+    </testcase>
+    <testcase classname="Modelo User › User.create()" name="debería lanzar error si no se puede crear el usuario" time="0.006">
+    </testcase>
+    <testcase classname="Modelo User › User.findById()" name="debería encontrar un usuario por ID" time="0">
+    </testcase>
+    <testcase classname="Modelo User › User.findById()" name="debería retornar null si el usuario no existe" time="0">
+    </testcase>
+    <testcase classname="Modelo User › User.findById()" name="debería retornar null si el usuario está inactivo" time="0">
+    </testcase>
+    <testcase classname="Modelo User › User.findByEmail()" name="debería encontrar un usuario por email" time="0">
+    </testcase>
+    <testcase classname="Modelo User › User.findByEmail()" name="debería retornar null si el email no existe" time="0">
+    </testcase>
+    <testcase classname="Modelo User › User.findAll()" name="debería obtener todos los usuarios con límite y offset por defecto" time="0">
+    </testcase>
+    <testcase classname="Modelo User › User.findAll()" name="debería aplicar límite y offset personalizados" time="0">
+    </testcase>
+    <testcase classname="Modelo User › user.update()" name="debería actualizar campos permitidos del usuario" time="0">
+    </testcase>
+    <testcase classname="Modelo User › user.update()" name="debería ignorar campos no permitidos" time="0">
+    </testcase>
+    <testcase classname="Modelo User › user.update()" name="debería lanzar error si no hay campos válidos para actualizar" time="0.001">
+    </testcase>
+    <testcase classname="Modelo User › user.changePassword()" name="debería cambiar la contraseña si la actual es correcta" time="0">
+    </testcase>
+    <testcase classname="Modelo User › user.changePassword()" name="debería lanzar error si la contraseña actual es incorrecta" time="0">
+    </testcase>
+    <testcase classname="Modelo User › user.verifyPassword()" name="debería verificar contraseña correcta" time="0">
+    </testcase>
+    <testcase classname="Modelo User › user.verifyPassword()" name="debería retornar false para contraseña incorrecta" time="0.001">
+    </testcase>
+    <testcase classname="Modelo User › user.deactivate()" name="debería desactivar un usuario" time="0.002">
+    </testcase>
+    <testcase classname="Modelo User › user.activate()" name="debería activar un usuario" time="0.001">
+    </testcase>
+    <testcase classname="Modelo User › User.count()" name="debería contar el total de usuarios activos" time="0">
+    </testcase>
+    <testcase classname="Modelo User › User.search()" name="debería buscar usuarios por término" time="0">
+    </testcase>
+    <testcase classname="Modelo User › user.toJSON()" name="debería convertir a JSON sin incluir password" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/models/Admin.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-05T23:37:15" time="0.034" tests="20">
+    <testcase classname="Modelo Admin › Constructor" name="debería crear una instancia de Admin con los datos proporcionados" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › Admin.create()" name="debería crear un nuevo administrador exitosamente" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › Admin.create()" name="debería usar rol por defecto si no se proporciona" time="0.002">
+    </testcase>
+    <testcase classname="Modelo Admin › Admin.findById()" name="debería encontrar un administrador por ID" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › Admin.findById()" name="debería retornar null si el administrador no existe" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › Admin.findByEmail()" name="debería encontrar un administrador por email" time="0.001">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.update()" name="debería actualizar campos permitidos del administrador" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.update()" name="debería lanzar error si no hay campos válidos para actualizar" time="0.007">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.changePassword()" name="debería cambiar la contraseña si la actual es correcta" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.changePassword()" name="debería lanzar error si la contraseña actual es incorrecta" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.verifyPassword()" name="debería verificar contraseña correcta" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.updateLastAccess()" name="debería actualizar el último acceso" time="0.001">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.isSuperAdmin()" name="debería retornar true si es super admin" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.isSuperAdmin()" name="debería retornar false si no es super admin" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.canPerformAction()" name="debería retornar true para acciones permitidas de admin" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.canPerformAction()" name="debería retornar true para todas las acciones si es super admin" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.deactivate()" name="debería desactivar un administrador" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.getStats()" name="debería retornar estadísticas del administrador" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.toJSON()" name="debería convertir a JSON sin incluir password" time="0">
+    </testcase>
+    <testcase classname="Modelo Admin › admin.toJSON()" name="debería asignar rol por defecto si no existe" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/models/Category.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-05T23:37:15" time="0.034" tests="20">
+    <testcase classname="Modelo Category › Constructor" name="debería crear una instancia de Category con los datos proporcionados" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › Category.create()" name="debería crear una nueva categoría exitosamente" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › Category.create()" name="debería lanzar error si no se puede crear la categoría" time="0.005">
+    </testcase>
+    <testcase classname="Modelo Category › Category.findById()" name="debería encontrar una categoría por ID con conteo de productos" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › Category.findById()" name="debería retornar null si la categoría no existe" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › Category.findByName()" name="debería encontrar una categoría por nombre" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › Category.findAll()" name="debería obtener todas las categorías con conteo de productos" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › Category.findAll()" name="debería obtener todas las categorías sin conteo de productos" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › category.update()" name="debería actualizar campos permitidos de la categoría" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › category.update()" name="debería lanzar error si no hay campos válidos para actualizar" time="0.001">
+    </testcase>
+    <testcase classname="Modelo Category › category.deactivate()" name="debería desactivar una categoría sin productos" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › category.deactivate()" name="debería lanzar error si la categoría tiene productos asociados" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › category.activate()" name="debería activar una categoría" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › category.getProducts()" name="debería obtener productos de la categoría" time="0.001">
+    </testcase>
+    <testcase classname="Modelo Category › category.getProductCount()" name="debería contar productos de la categoría" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › category.getStats()" name="debería obtener estadísticas de la categoría" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › category.canDelete()" name="debería retornar true si no tiene productos" time="0.001">
+    </testcase>
+    <testcase classname="Modelo Category › category.canDelete()" name="debería retornar false si tiene productos" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › Category.search()" name="debería buscar categorías por término" time="0">
+    </testcase>
+    <testcase classname="Modelo Category › category.toJSON()" name="debería convertir a JSON con todos los campos necesarios" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/middleware/validation.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-05T23:37:15" time="0.029" tests="20">
+    <testcase classname="Middleware de Validación › handleValidationErrors" name="debería continuar si no hay errores de validación" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › handleValidationErrors" name="debería retornar error si hay errores de validación" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Validación › sanitizeInput" name="debería sanitizar strings eliminando espacios" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › sanitizeInput" name="debería sanitizar arrays recursivamente" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › sanitizeInput" name="debería sanitizar objetos anidados" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › validatePagination" name="debería usar valores por defecto si no se proporcionan" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Validación › validatePagination" name="debería usar valores proporcionados si son válidos" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › validatePagination" name="debería rechazar página menor a 1" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › validatePagination" name="debería rechazar límite fuera del rango" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › validateNumericId" name="debería validar ID numérico válido" time="0.002">
+    </testcase>
+    <testcase classname="Middleware de Validación › validateNumericId" name="debería rechazar ID no numérico" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › validateNumericId" name="debería rechazar ID menor a 1" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › validateNumericId" name="debería funcionar con nombre de parámetro personalizado" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › asyncHandler" name="debería manejar funciones async exitosamente" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › asyncHandler" name="debería pasar errores al next si ocurre una excepción" time="0.001">
+    </testcase>
+    <testcase classname="Middleware de Validación › validateJSON" name="debería continuar si el Content-Type es JSON válido" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › validateJSON" name="debería continuar si no es JSON" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › validateContentType" name="debería permitir Content-Type permitido" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › validateContentType" name="debería rechazar Content-Type no permitido" time="0">
+    </testcase>
+    <testcase classname="Middleware de Validación › validateContentType" name="debería rechazar si no hay Content-Type" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/example.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-05T23:37:15" time="0.011" tests="3">
+    <testcase classname="Configuración de Jest" name="debería ejecutar tests correctamente" time="0.001">
+    </testcase>
+    <testcase classname="Configuración de Jest" name="debería tener acceso a variables de entorno de test" time="0">
+    </testcase>
+    <testcase classname="Configuración de Jest" name="debería poder hacer operaciones matemáticas" time="0">
+    </testcase>
+  </testsuite>
+</testsuites>
