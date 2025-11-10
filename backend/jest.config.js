@@ -23,7 +23,12 @@ module.exports = {
     '!**/coverage/**',
     '!jest.config.js',
     '!server.js',
-    '!**/scripts/**'
+    '!**/scripts/**',
+    '!**/config/**',          // Excluir configuración de DB
+    '!**/auth-fixed.js',      // Archivo auxiliar
+    '!**/debug.js',           // Archivo de debug
+    '!**/test-simple.js',     // Archivo de prueba
+    '!ecosystem.config.js'    // Config de PM2
   ],
   
   // Umbrales de cobertura requeridos para el TP7 (mínimo 70%)
