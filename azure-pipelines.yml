@@ -270,7 +270,7 @@ stages:
         deploy:
           steps:
           - task: AzureCLI@2
-            displayName: 'Obtener credenciales ACR'
+            displayName: 'Obtener credenciales ACR y Resource Group del App Service'
             inputs:
               azureSubscription: $(azureSubscription)
               scriptType: 'bash'
@@ -280,6 +280,25 @@ stages:
                 ACR_PASSWORD=$(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv)
                 echo "##vso[task.setvariable variable=ACR_USERNAME]$ACR_USERNAME"
                 echo "##vso[task.setvariable variable=ACR_PASSWORD]$ACR_PASSWORD"
+                
+                # Obtener el resource group del App Service
+                APP_SERVICE_RG=$(az webapp show --name $(webAppNameBackendQA) --query resourceGroup -o tsv 2>/dev/null || echo "")
+                
+                if [ -z "$APP_SERVICE_RG" ]; then
+                  echo "⚠️ No se pudo encontrar el App Service $(webAppNameBackendQA)"
+                  echo "Buscando en todos los resource groups..."
+                  APP_SERVICE_RG=$(az resource list --name $(webAppNameBackendQA) --resource-type "Microsoft.Web/sites" --query "[0].resourceGroup" -o tsv 2>/dev/null || echo "")
+                fi
+                
+                if [ -z "$APP_SERVICE_RG" ]; then
+                  echo "❌ No se encontró el App Service $(webAppNameBackendQA) en ningún resource group"
+                  echo "Usando resource group por defecto: $(resourceGroupName)"
+                  APP_SERVICE_RG="$(resourceGroupName)"
+                else
+                  echo "✅ App Service encontrado en resource group: $APP_SERVICE_RG"
+                fi
+                
+                echo "##vso[task.setvariable variable=APP_SERVICE_RG]$APP_SERVICE_RG"
           
           - task: AzureCLI@2
             displayName: 'Configurar App Service con imagen Docker'
@@ -291,7 +310,7 @@ stages:
                 # Configurar el App Service para usar la imagen del contenedor
                 az webapp config container set \
                   --name $(webAppNameBackendQA) \
-                  --resource-group $(resourceGroupName) \
+                  --resource-group $(APP_SERVICE_RG) \
                   --docker-custom-image-name $(backendImage) \
                   --docker-registry-server-url https://$(acrLoginServer) \
                   --docker-registry-server-user $(ACR_USERNAME) \
@@ -300,7 +319,7 @@ stages:
                 # Configurar variables de entorno
                 az webapp config appsettings set \
                   --name $(webAppNameBackendQA) \
-                  --resource-group $(resourceGroupName) \
+                  --resource-group $(APP_SERVICE_RG) \
                   --settings \
                     NODE_ENV=qa \
                     PORT=8000 \
@@ -315,7 +334,7 @@ stages:
                     JWT_EXPIRES_IN=24h
                 
                 # Reiniciar el App Service para aplicar los cambios
-                az webapp restart --name $(webAppNameBackendQA) --resource-group $(resourceGroupName)
+                az webapp restart --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG)
                 
                 echo "Backend QA URL: $(backendUrlQA)"
           
@@ -339,7 +358,7 @@ stages:
                 done
                 echo "⚠️ Backend no respondió en el tiempo esperado"
                 echo "Estado del App Service:"
-                az webapp show --name $(webAppNameBackendQA) --resource-group $(resourceGroupName) --query state -o tsv
+                az webapp show --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG) --query state -o tsv 2>/dev/null || echo "No se pudo obtener el estado"
                 exit 1
 
   - deployment: DeployFrontendQA
@@ -353,7 +372,7 @@ stages:
         deploy:
           steps:
           - task: AzureCLI@2
-            displayName: 'Obtener credenciales ACR'
+            displayName: 'Obtener credenciales ACR y Resource Group del App Service Frontend'
             inputs:
               azureSubscription: $(azureSubscription)
               scriptType: 'bash'
@@ -363,6 +382,25 @@ stages:
                 ACR_PASSWORD=$(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv)
                 echo "##vso[task.setvariable variable=ACR_USERNAME]$ACR_USERNAME"
                 echo "##vso[task.setvariable variable=ACR_PASSWORD]$ACR_PASSWORD"
+                
+                # Obtener el resource group del App Service Frontend
+                FRONTEND_RG=$(az webapp show --name $(webAppNameFrontendQA) --query resourceGroup -o tsv 2>/dev/null || echo "")
+                
+                if [ -z "$FRONTEND_RG" ]; then
+                  echo "⚠️ No se pudo encontrar el App Service $(webAppNameFrontendQA)"
+                  echo "Buscando en todos los resource groups..."
+                  FRONTEND_RG=$(az resource list --name $(webAppNameFrontendQA) --resource-type "Microsoft.Web/sites" --query "[0].resourceGroup" -o tsv 2>/dev/null || echo "")
+                fi
+                
+                if [ -z "$FRONTEND_RG" ]; then
+                  echo "❌ No se encontró el App Service $(webAppNameFrontendQA) en ningún resource group"
+                  echo "Usando resource group por defecto: $(resourceGroupName)"
+                  FRONTEND_RG="$(resourceGroupName)"
+                else
+                  echo "✅ App Service Frontend encontrado en resource group: $FRONTEND_RG"
+                fi
+                
+                echo "##vso[task.setvariable variable=FRONTEND_RG]$FRONTEND_RG"
           
           - task: AzureCLI@2
             displayName: 'Configurar App Service Frontend con imagen Docker'
@@ -374,7 +412,7 @@ stages:
                 # Configurar el App Service para usar la imagen del contenedor
                 az webapp config container set \
                   --name $(webAppNameFrontendQA) \
-                  --resource-group $(resourceGroupName) \
+                  --resource-group $(FRONTEND_RG) \
                   --docker-custom-image-name $(frontendImage) \
                   --docker-registry-server-url https://$(acrLoginServer) \
                   --docker-registry-server-user $(ACR_USERNAME) \
@@ -383,12 +421,12 @@ stages:
                 # Configurar variables de entorno
                 az webapp config appsettings set \
                   --name $(webAppNameFrontendQA) \
-                  --resource-group $(resourceGroupName) \
+                  --resource-group $(FRONTEND_RG) \
                   --settings \
                     REACT_APP_API_URL=$(backendUrlQA)
                 
                 # Reiniciar el App Service para aplicar los cambios
-                az webapp restart --name $(webAppNameFrontendQA) --resource-group $(resourceGroupName)
+                az webapp restart --name $(webAppNameFrontendQA) --resource-group $(FRONTEND_RG)
                 
                 echo "Frontend QA URL: $(frontendUrlQA)"
 
@@ -537,7 +575,7 @@ stages:
         deploy:
           steps:
           - task: AzureCLI@2
-            displayName: 'Obtener credenciales ACR'
+            displayName: 'Obtener credenciales ACR y Resource Group del App Service'
             inputs:
               azureSubscription: $(azureSubscription)
               scriptType: 'bash'
@@ -547,6 +585,25 @@ stages:
                 ACR_PASSWORD=$(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv)
                 echo "##vso[task.setvariable variable=ACR_USERNAME]$ACR_USERNAME"
                 echo "##vso[task.setvariable variable=ACR_PASSWORD]$ACR_PASSWORD"
+                
+                # Obtener el resource group del App Service
+                PROD_BACKEND_RG=$(az webapp show --name $(webAppNameBackendProd) --query resourceGroup -o tsv 2>/dev/null || echo "")
+                
+                if [ -z "$PROD_BACKEND_RG" ]; then
+                  echo "⚠️ No se pudo encontrar el App Service $(webAppNameBackendProd)"
+                  echo "Buscando en todos los resource groups..."
+                  PROD_BACKEND_RG=$(az resource list --name $(webAppNameBackendProd) --resource-type "Microsoft.Web/sites" --query "[0].resourceGroup" -o tsv 2>/dev/null || echo "")
+                fi
+                
+                if [ -z "$PROD_BACKEND_RG" ]; then
+                  echo "❌ No se encontró el App Service $(webAppNameBackendProd) en ningún resource group"
+                  echo "Usando resource group por defecto: $(resourceGroupName)"
+                  PROD_BACKEND_RG="$(resourceGroupName)"
+                else
+                  echo "✅ App Service encontrado en resource group: $PROD_BACKEND_RG"
+                fi
+                
+                echo "##vso[task.setvariable variable=PROD_BACKEND_RG]$PROD_BACKEND_RG"
           
           - task: AzureCLI@2
             displayName: 'Configurar App Service con imagen Docker'
@@ -558,7 +615,7 @@ stages:
                 # Configurar el App Service para usar la imagen del contenedor
                 az webapp config container set \
                   --name $(webAppNameBackendProd) \
-                  --resource-group $(resourceGroupName) \
+                  --resource-group $(PROD_BACKEND_RG) \
                   --docker-custom-image-name $(backendImage) \
                   --docker-registry-server-url https://$(acrLoginServer) \
                   --docker-registry-server-user $(ACR_USERNAME) \
@@ -567,7 +624,7 @@ stages:
                 # Configurar variables de entorno
                 az webapp config appsettings set \
                   --name $(webAppNameBackendProd) \
-                  --resource-group $(resourceGroupName) \
+                  --resource-group $(PROD_BACKEND_RG) \
                   --settings \
                     NODE_ENV=production \
                     PORT=8000 \
@@ -582,7 +639,7 @@ stages:
                     JWT_EXPIRES_IN=24h
                 
                 # Reiniciar el App Service para aplicar los cambios
-                az webapp restart --name $(webAppNameBackendProd) --resource-group $(resourceGroupName)
+                az webapp restart --name $(webAppNameBackendProd) --resource-group $(PROD_BACKEND_RG)
                 
                 echo "Backend Production URL: $(backendUrlProd)"
           
@@ -606,7 +663,7 @@ stages:
                 done
                 echo "⚠️ Backend no respondió en el tiempo esperado"
                 echo "Estado del App Service:"
-                az webapp show --name $(webAppNameBackendProd) --resource-group $(resourceGroupName) --query state -o tsv
+                az webapp show --name $(webAppNameBackendProd) --resource-group $(PROD_BACKEND_RG) --query state -o tsv 2>/dev/null || echo "No se pudo obtener el estado"
                 exit 1
 
   - deployment: DeployFrontendProd
@@ -620,7 +677,7 @@ stages:
         deploy:
           steps:
           - task: AzureCLI@2
-            displayName: 'Obtener credenciales ACR'
+            displayName: 'Obtener credenciales ACR y Resource Group del App Service Frontend'
             inputs:
               azureSubscription: $(azureSubscription)
               scriptType: 'bash'
@@ -630,6 +687,25 @@ stages:
                 ACR_PASSWORD=$(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv)
                 echo "##vso[task.setvariable variable=ACR_USERNAME]$ACR_USERNAME"
                 echo "##vso[task.setvariable variable=ACR_PASSWORD]$ACR_PASSWORD"
+                
+                # Obtener el resource group del App Service Frontend
+                PROD_FRONTEND_RG=$(az webapp show --name $(webAppNameFrontendProd) --query resourceGroup -o tsv 2>/dev/null || echo "")
+                
+                if [ -z "$PROD_FRONTEND_RG" ]; then
+                  echo "⚠️ No se pudo encontrar el App Service $(webAppNameFrontendProd)"
+                  echo "Buscando en todos los resource groups..."
+                  PROD_FRONTEND_RG=$(az resource list --name $(webAppNameFrontendProd) --resource-type "Microsoft.Web/sites" --query "[0].resourceGroup" -o tsv 2>/dev/null || echo "")
+                fi
+                
+                if [ -z "$PROD_FRONTEND_RG" ]; then
+                  echo "❌ No se encontró el App Service $(webAppNameFrontendProd) en ningún resource group"
+                  echo "Usando resource group por defecto: $(resourceGroupName)"
+                  PROD_FRONTEND_RG="$(resourceGroupName)"
+                else
+                  echo "✅ App Service Frontend encontrado en resource group: $PROD_FRONTEND_RG"
+                fi
+                
+                echo "##vso[task.setvariable variable=PROD_FRONTEND_RG]$PROD_FRONTEND_RG"
           
           - task: AzureCLI@2
             displayName: 'Configurar App Service Frontend con imagen Docker'
@@ -641,7 +717,7 @@ stages:
                 # Configurar el App Service para usar la imagen del contenedor
                 az webapp config container set \
                   --name $(webAppNameFrontendProd) \
-                  --resource-group $(resourceGroupName) \
+                  --resource-group $(PROD_FRONTEND_RG) \
                   --docker-custom-image-name $(frontendImage) \
                   --docker-registry-server-url https://$(acrLoginServer) \
                   --docker-registry-server-user $(ACR_USERNAME) \
@@ -650,11 +726,11 @@ stages:
                 # Configurar variables de entorno
                 az webapp config appsettings set \
                   --name $(webAppNameFrontendProd) \
-                  --resource-group $(resourceGroupName) \
+                  --resource-group $(PROD_FRONTEND_RG) \
                   --settings \
                     REACT_APP_API_URL=$(backendUrlProd)
                 
                 # Reiniciar el App Service para aplicar los cambios
-                az webapp restart --name $(webAppNameFrontendProd) --resource-group $(resourceGroupName)
+                az webapp restart --name $(webAppNameFrontendProd) --resource-group $(PROD_FRONTEND_RG)
                 
                 echo "Frontend Production URL: $(frontendUrlProd)"
