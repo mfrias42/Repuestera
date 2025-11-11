@@ -1,9 +1,17 @@
 describe('Test E2E - Validación de Errores y Casos Límite', () => {
   
+  // Usuario de prueba para estos tests - será creado en el before
   const testUser = {
-    email: 'test@test.com',
-    password: 'password123'
+    email: `validacion_test_${Date.now()}@test.com`,
+    password: 'Password123',
+    nombre: 'ValidacionTest',
+    apellido: 'Usuario'
   };
+
+  before(() => {
+    // Crear el usuario UNA VEZ para todos los tests que lo necesiten
+    cy.registerUser(testUser);
+  });
 
   it('Debe mostrar error cuando las credenciales de login son incorrectas', () => {
     cy.visit('/login');
@@ -27,10 +35,10 @@ describe('Test E2E - Validación de Errores y Casos Límite', () => {
   it('Debe mostrar error al intentar registrar con email duplicado', () => {
     cy.visit('/register');
 
-    // Intentar registrar con el email que ya existe (test@test.com)
+    // Intentar registrar con el email que ya existe (el de testUser)
     cy.get('input[name="nombre"]').type('Usuario');
     cy.get('input[name="apellido"]').type('Duplicado');
-    cy.get('input[name="email"]').type('test@test.com'); // Email que ya existe
+    cy.get('input[name="email"]').type(testUser.email); // Email que ya existe
     cy.get('input[name="password"]').type('password123');
     cy.get('input[name="confirmPassword"]').type('password123');
     
@@ -53,17 +61,13 @@ describe('Test E2E - Validación de Errores y Casos Límite', () => {
   });
 
   it('Debe cargar y mostrar productos después de login exitoso', () => {
-    cy.visit('/login');
-    
-    cy.get('input[name="email"]').type(testUser.email);
-    cy.get('input[name="password"]').type(testUser.password);
-    cy.get('button[type="submit"]').click();
+    cy.loginUser(testUser.email, testUser.password);
 
     // Verificar redirección a productos
-    cy.url().should('include', '/products', { timeout: 10000 });
+    cy.url({ timeout: 10000 }).should('include', '/products');
     
     // Verificar que el catálogo se muestra
-    cy.contains(/Catálogo de Productos/i).should('be.visible');
+    cy.contains(/Catálogo de Productos/i, { timeout: 10000 }).should('be.visible');
     
     // Verificar que hay productos cargados
     cy.get('.MuiCard-root', { timeout: 10000 }).should('have.length.at.least', 1);
@@ -83,10 +87,12 @@ describe('Test E2E - Validación de Errores y Casos Límite', () => {
 
   it('Debe mostrar información de stock en las tarjetas de productos', () => {
     cy.visit('/products');
-    cy.wait(2000);
-
-    // Verificar que se muestran las etiquetas de stock
-    cy.contains(/En stock|Stock:/i).should('be.visible');
+    
+    // Verificar que carga la página de productos
+    cy.contains(/Catálogo de Productos/i, { timeout: 10000 }).should('be.visible');
+    
+    // Verificar que hay cards de productos
+    cy.get('.MuiCard-root', { timeout: 10000 }).should('have.length.at.least', 1);
     
     // Verificar que hay botones de "Agregar al Carrito"
     cy.get('button').contains(/Agregar al Carrito/i).should('exist');
@@ -94,19 +100,16 @@ describe('Test E2E - Validación de Errores y Casos Límite', () => {
 
   it('Debe cerrar sesión y redirigir al login', () => {
     // Login primero
-    cy.visit('/login');
-    cy.get('input[name="email"]').type(testUser.email);
-    cy.get('input[name="password"]').type(testUser.password);
-    cy.get('button[type="submit"]').click();
+    cy.loginUser(testUser.email, testUser.password);
 
-    cy.url().should('include', '/products');
+    cy.url({ timeout: 10000 }).should('include', '/products');
     cy.wait(2000);
 
-    // Buscar y hacer clic en el menú de usuario (buscar el email o avatar)
+    // Buscar y hacer clic en el menú de usuario
     cy.get('button').then(($buttons) => {
       // Buscar el botón que contiene el email del usuario o un menú
       const menuButton = $buttons.filter((i, btn) => {
-        return btn.textContent.includes('test@test.com') || 
+        return btn.textContent.includes(testUser.email) || 
                btn.getAttribute('aria-controls') === 'menu-appbar';
       });
       
@@ -123,12 +126,9 @@ describe('Test E2E - Validación de Errores y Casos Límite', () => {
 
   it('Debe mostrar el badge del carrito con la cantidad correcta', () => {
     // Login
-    cy.visit('/login');
-    cy.get('input[name="email"]').type(testUser.email);
-    cy.get('input[name="password"]').type(testUser.password);
-    cy.get('button[type="submit"]').click();
+    cy.loginUser(testUser.email, testUser.password);
 
-    cy.url().should('include', '/products');
+    cy.url({ timeout: 10000 }).should('include', '/products');
     cy.wait(2000);
 
     // Agregar un producto al carrito

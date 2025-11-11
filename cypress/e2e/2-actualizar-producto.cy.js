@@ -9,40 +9,24 @@ describe('Test E2E - Gestión de Carrito', () => {
 
   before(() => {
     // Registrar usuario una sola vez para todos los tests
-    cy.clearLocalStorage();
-    cy.visit('/register');
-    
-    cy.get('input[name="nombre"]').type(testUser.nombre);
-    cy.get('input[name="apellido"]').type(testUser.apellido);
-    cy.get('input[name="email"]').type(testUser.email);
-    cy.get('input[name="password"]').type(testUser.password);
-    cy.get('input[name="confirmPassword"]').type(testUser.password);
-    cy.get('input[name="telefono"]').clear();
-    cy.get('input[name="direccion"]').clear();
-    
-    cy.get('button[type="submit"]').click();
-    
-    // Esperar confirmación de registro
-    cy.url({ timeout: 10000 }).should('match', /\/(login|products)/);
+    cy.registerUser(testUser);
   });
 
   beforeEach(() => {
     cy.clearLocalStorage();
-    cy.visit('/login');
+    // Login antes de cada test
+    cy.loginUser(testUser.email, testUser.password);
+    // Verificar que el login fue exitoso
+    cy.url({ timeout: 10000 }).should('include', '/products');
   });
 
   it('Debe permitir agregar productos al carrito', () => {
-    // Login
-    cy.get('input[name="email"]').type(testUser.email);
-    cy.get('input[name="password"]').type(testUser.password);
-    cy.get('button[type="submit"]').click();
-
-    cy.url().should('include', '/products');
-
+    // Ya estamos logueados por el beforeEach
+    
     // Esperar a que carguen los productos
     cy.contains(/Catálogo de Productos/i, { timeout: 10000 }).should('be.visible');
 
-    // Buscar el botón "Agregar al Carrito" (basado en el código real de Products.js)
+    // Buscar el botón "Agregar al Carrito"
     cy.contains('button', /Agregar al Carrito/i).first().click();
 
     // Verificar mensaje de éxito (Snackbar)
@@ -53,34 +37,26 @@ describe('Test E2E - Gestión de Carrito', () => {
   });
 
   it('Debe permitir actualizar cantidad de productos en el carrito', () => {
-    // NO limpiar localStorage para este test
-    // Login
-    cy.visit('/login');
-    cy.get('input[name="email"]').type(testUser.email);
-    cy.get('input[name="password"]').type(testUser.password);
-    cy.get('button[type="submit"]').click();
-
-    cy.url().should('include', '/products');
+    // Ya estamos logueados por el beforeEach
     
     // Esperar a que carguen los productos
     cy.contains(/Catálogo de Productos/i, { timeout: 10000 }).should('be.visible');
 
-    // Agregar un producto dentro de este test
+    // Agregar un producto
     cy.contains('button', /Agregar al Carrito/i).first().click();
     
     // Esperar mensaje de confirmación
     cy.contains(/agregado al carrito/i, { timeout: 5000 }).should('be.visible');
     cy.wait(2000);
 
-    // Ir al carrito haciendo clic en el badge del carrito (para mantener el estado)
+    // Ir al carrito haciendo clic en el badge
     cy.get('.MuiBadge-root').first().click();
 
     // Verificar que estamos en el carrito y hay productos
     cy.url().should('include', '/cart');
     cy.contains(/Carrito de Compras/i, { timeout: 5000 }).should('be.visible');
 
-    // Incrementar cantidad usando el botón con icono Add (el tercer IconButton de cada producto)
-    // Los IconButtons son: Remove, Add, Delete - necesitamos el segundo (Add)
+    // Incrementar cantidad usando el botón con icono Add
     cy.get('.MuiIconButton-root').eq(1).click();
 
     // Esperar y verificar que la cantidad aumentó
@@ -89,13 +65,7 @@ describe('Test E2E - Gestión de Carrito', () => {
   });
 
   it('Debe permitir eliminar productos del carrito', () => {
-    // Login
-    cy.visit('/login');
-    cy.get('input[name="email"]').type(testUser.email);
-    cy.get('input[name="password"]').type(testUser.password);
-    cy.get('button[type="submit"]').click();
-
-    cy.url().should('include', '/products');
+    // Ya estamos logueados por el beforeEach
 
     // Agregar producto
     cy.contains('button', /Agregar al Carrito/i).first().click();
@@ -132,13 +102,7 @@ describe('Test E2E - Gestión de Carrito', () => {
   });
 
   it('Debe calcular correctamente el total del carrito', () => {
-    // Login
-    cy.visit('/login');
-    cy.get('input[name="email"]').type(testUser.email);
-    cy.get('input[name="password"]').type(testUser.password);
-    cy.get('button[type="submit"]').click();
-
-    cy.url().should('include', '/products');
+    // Ya estamos logueados por el beforeEach
     
     // Esperar a que carguen los productos
     cy.wait(1500);
