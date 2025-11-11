@@ -33,7 +33,7 @@ describe('Validación de manejo de errores en productos', () => {
     cy.get('input[name="codigo"]').type(codigoDuplicado);
     cy.get('input[name="precio"]').type('100');
     cy.get('input[name="stock"]').type('10');
-    cy.get('input[name="categoria"]').type('Test');
+    // Skip categoria - es opcional y causa problemas con Material-UI Select
     cy.contains('button', 'Guardar').click();
     
     // Esperar a que se procese
@@ -55,7 +55,7 @@ describe('Validación de manejo de errores en productos', () => {
     cy.get('input[name="codigo"]').type(codigoDuplicado);
     cy.get('input[name="precio"]').type('200');
     cy.get('input[name="stock"]').type('20');
-    cy.get('input[name="categoria"]').type('Test');
+    // Skip categoria - es opcional y causa problemas
     
     // Usar force: true para evitar el problema del elemento cubierto
     cy.contains('button', 'Guardar').click({ force: true });
