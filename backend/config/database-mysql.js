@@ -1,12 +1,11 @@
 const mysql = require('mysql2/promise');
-// Configurar dotenv sin sobrescribir variables de entorno existentes
-require('dotenv').config({ override: false });
+require('dotenv').config();
 
 // Configuración de Azure Database for MySQL Flexible Server
 const config = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || 'root',
+  user: process.env.DB_USER || 'repuestera_admin',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'repuestera_db',
   ssl: {
