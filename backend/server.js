@@ -15,12 +15,17 @@ const testRoutes = require('./routes/test-simple');
 const { testConnection, initializeTables } = require('./config/database-mysql');
 const { fixDatabase } = require('./scripts/fixDatabase');
 
-// Probar conexión a la base de datos al iniciar (sin reparación automática)
-testConnection().then(success => {
+// Probar conexión a la base de datos al iniciar
+testConnection().then(async (success) => {
   if (success) {
     console.log('✅ Base de datos conectada correctamente');
-    // Comentado para evitar timeout en el pipeline
-    // return fixDatabase();
+    // Inicializar tablas si no existen
+    try {
+      await initializeTables();
+      console.log('✅ Tablas de base de datos inicializadas');
+    } catch (error) {
+      console.error('⚠️  Error inicializando tablas:', error.message);
+    }
   } else {
     console.error('❌ Error conectando a la base de datos');
     throw new Error('No se pudo conectar a la base de datos');
