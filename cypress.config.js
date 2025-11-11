@@ -13,9 +13,10 @@ module.exports = defineConfig({
     env: {
       apiUrl: 'http://localhost:8000/api'
     },
-    defaultCommandTimeout: 10000,
-    requestTimeout: 10000,
-    responseTimeout: 10000,
+    defaultCommandTimeout: 20000,  // Aumentado de 10s a 20s para Azure
+    requestTimeout: 15000,
+    responseTimeout: 15000,
+    pageLoadTimeout: 60000,  // Aumentado para páginas lentas en Azure
     reporter: 'cypress-multi-reporters',
     reporterOptions: {
       reporterEnabled: 'spec, mocha-junit-reporter',

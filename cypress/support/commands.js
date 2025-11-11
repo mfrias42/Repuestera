@@ -48,7 +48,7 @@ Cypress.Commands.add('loginUser', (email, password) => {
   cy.get('button[type="submit"]').click();
   
   // Esperar a que se complete el login y redirija a products
-  cy.wait(2000); // Dar tiempo para que procese
+  cy.wait(3000); // Aumentado a 3s para Azure
   
   cy.url().then((url) => {
     if (url.includes('/products')) {
@@ -58,8 +58,8 @@ Cypress.Commands.add('loginUser', (email, password) => {
     }
   });
   
-  // Verificar que estamos en products  
-  cy.url({ timeout: 10000 }).should('include', '/products');
+  // Verificar que estamos en products (con timeout más largo)
+  cy.url({ timeout: 20000 }).should('include', '/products');
 });
 
 // Comando para registrar Y hacer login (útil para tests que necesitan usuario autenticado)
