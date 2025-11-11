@@ -16,7 +16,13 @@
     "build": "npm run frontend:build",
     "test": "npm run backend:test && npm run frontend:test",
     "backend:test": "cd backend && npm test",
-    "frontend:test": "cd frontend && npm test"
+    "frontend:test": "cd frontend && npm test",
+    "test:coverage": "npm run backend:test:coverage && npm run frontend:test:coverage",
+    "backend:test:coverage": "cd backend && npm test -- --coverage",
+    "frontend:test:coverage": "cd frontend && npm test -- --coverage --watchAll=false",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "sonar": "sonar-scanner"
   },
   "keywords": [
     "repuestera",
@@ -29,7 +35,8 @@
   "author": "Tu Nombre",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "cypress": "^15.6.0"
   },
   "engines": {
     "node": ">=16.0.0",
