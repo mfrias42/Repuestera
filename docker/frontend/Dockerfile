@@ -1,25 +1,42 @@
-# Imagen base de nginx alpine (ligera)
+# ============================================
+# STAGE 1: Build React app
+# ============================================
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copiar package files del frontend
+COPY frontend/package*.json ./
+
+# Instalar dependencias (usando install en vez de ci para evitar problemas de sincronización)
+RUN npm install --production=false
+
+# Copiar código fuente del frontend
+COPY frontend/ .
+
+# Build de producción
+RUN npm run build
+
+# ============================================
+# STAGE 2: Serve with Nginx
+# ============================================
 FROM nginx:alpine
 
-# Establecer el directorio de trabajo
-WORKDIR /usr/share/nginx/html
-
 # Eliminar los archivos por defecto de nginx
-RUN rm -rf ./*
+RUN rm -rf /usr/share/nginx/html/*
 
-# Copiar los archivos compilados de React (build) al directorio de nginx
-# Se espera que el contexto contenga el resultado de 'npm run build'
-COPY . .
+# Copiar los archivos compilados desde el stage builder
+COPY --from=builder /app/build /usr/share/nginx/html
 
 # Copiar configuración personalizada de nginx para SPA
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Agregar script para inyectar variables de entorno en runtime
+COPY docker/frontend/env.sh /docker-entrypoint.d/env.sh
+RUN chmod +x /docker-entrypoint.d/env.sh
 
 # Exponer puerto 80
 EXPOSE 80
-
-# Agregar script para inyectar variables de entorno en runtime
-COPY env.sh /docker-entrypoint.d/env.sh
-RUN chmod +x /docker-entrypoint.d/env.sh
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
