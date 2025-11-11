@@ -478,7 +478,8 @@ stages:
         ArtifactName: 'cypress-screenshots'
         publishLocation: 'Container'
       displayName: 'Publicar screenshots de errores'
-    
+      continueOnError: true
+
     - task: PublishBuildArtifacts@1
       condition: always()
       inputs:
@@ -486,6 +487,7 @@ stages:
         ArtifactName: 'cypress-videos'
         publishLocation: 'Container'
       displayName: 'Publicar videos de tests'
+      continueOnError: true
 
 # ============================================================================
 # STAGE PRODUCTION - Despliegue con Aprobación Manual
