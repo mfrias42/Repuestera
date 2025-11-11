@@ -158,6 +158,16 @@ stages:
     - script: |
         # Iniciar MySQL y configurar
         sudo systemctl start mysql
+        echo "Esperando a que MySQL esté listo..."
+        for i in {1..30}; do
+          if mysqladmin ping -h 127.0.0.1 --silent; then
+            echo "MySQL está listo"; break
+          fi
+          echo "Intento $i: MySQL no está listo aún, esperando..."
+          sleep 2
+        done
+        # Asegurar autenticación de root compatible y crear base
+        sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY ''; FLUSH PRIVILEGES;" || true
         sudo mysql -e "CREATE DATABASE IF NOT EXISTS repuestera_db;"
         echo "MySQL configured with database repuestera_db"
         # Usar root sin password (default en Azure pipelines)
@@ -184,6 +194,11 @@ stages:
       displayName: 'Iniciar servidor backend'
       env:
         PORT: '8000'
+        DB_HOST: '127.0.0.1'
+        DB_USER: 'root'
+        DB_PASSWORD: ''
+        DB_NAME: 'repuestera_db'
+        DB_PORT: '3306'
 
     - script: |
         # Iniciar frontend en background
