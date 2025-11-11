@@ -34,6 +34,7 @@ describe('Flujo de creación de producto como admin', () => {
     cy.get('input[name="codigo"]').type('CYP-' + Date.now()); // Código único para evitar duplicados
     cy.get('input[name="precio"]').type('150.50');
     cy.get('input[name="stock"]').type('20');
+    cy.get('input[name="categoria"]').type('Test');
     cy.get('textarea[name="descripcion"]').type('Producto creado por test E2E de Cypress');
 
     // Enviar el formulario
