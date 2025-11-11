@@ -17,7 +17,6 @@ variables:
   
   # Variables Azure Container Registry
   acrName: 'repusteraacr'
-  acrServiceConnection: 'ACR-ServiceConnection'
   
   # Variables QA - Container Instances
   containerNameBackendQA: 'repuestera-backend-qa'
@@ -116,19 +115,29 @@ stages:
       inputs:
         pollingTimeoutSec: '300'
 
-    - task: Docker@2
-      displayName: 'Construir imagen Docker del backend'
+    - task: AzureCLI@2
+      displayName: 'Construir y publicar imagen Docker del backend'
       inputs:
-        containerRegistry: $(acrServiceConnection)
-        repository: 'repuestera-backend'
-        command: 'buildAndPush'
-        Dockerfile: 'docker/backend/Dockerfile'
-        buildContext: '.'
-        tags: |
-          latest
-          $(Build.BuildId)
-          qa-$(Build.BuildId)
-          prod-$(Build.BuildId)
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Login a ACR
+          az acr login --name $(acrName)
+          
+          # Construir imagen con múltiples tags
+          docker build -f docker/backend/Dockerfile \
+            -t $(acrName).azurecr.io/repuestera-backend:latest \
+            -t $(acrName).azurecr.io/repuestera-backend:$(Build.BuildId) \
+            -t $(acrName).azurecr.io/repuestera-backend:qa-$(Build.BuildId) \
+            -t $(acrName).azurecr.io/repuestera-backend:prod-$(Build.BuildId) \
+            .
+          
+          # Push todas las imágenes
+          docker push $(acrName).azurecr.io/repuestera-backend:latest
+          docker push $(acrName).azurecr.io/repuestera-backend:$(Build.BuildId)
+          docker push $(acrName).azurecr.io/repuestera-backend:qa-$(Build.BuildId)
+          docker push $(acrName).azurecr.io/repuestera-backend:prod-$(Build.BuildId)
 
   - job: BuildFrontendQA
     displayName: 'Construir Frontend para QA'
@@ -168,17 +177,25 @@ stages:
       continueOnError: true
       condition: always()
     
-    - task: Docker@2
-      displayName: 'Construir imagen Docker del frontend para QA'
+    - task: AzureCLI@2
+      displayName: 'Construir y publicar imagen Docker del frontend para QA'
       inputs:
-        containerRegistry: $(acrServiceConnection)
-        repository: 'repuestera-frontend'
-        command: 'buildAndPush'
-        Dockerfile: 'docker/frontend/Dockerfile'
-        buildContext: '.'
-        tags: |
-          qa-latest
-          qa-$(Build.BuildId)
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Login a ACR
+          az acr login --name $(acrName)
+          
+          # Construir imagen con múltiples tags
+          docker build -f docker/frontend/Dockerfile \
+            -t $(acrName).azurecr.io/repuestera-frontend:qa-latest \
+            -t $(acrName).azurecr.io/repuestera-frontend:qa-$(Build.BuildId) \
+            .
+          
+          # Push todas las imágenes
+          docker push $(acrName).azurecr.io/repuestera-frontend:qa-latest
+          docker push $(acrName).azurecr.io/repuestera-frontend:qa-$(Build.BuildId)
 
   - job: BuildFrontendProd
     displayName: 'Construir Frontend para Producción'
@@ -208,17 +225,25 @@ stages:
         CI: 'true'
         NODE_ENV: 'test'
 
-    - task: Docker@2
-      displayName: 'Construir imagen Docker del frontend para Producción'
+    - task: AzureCLI@2
+      displayName: 'Construir y publicar imagen Docker del frontend para Producción'
       inputs:
-        containerRegistry: $(acrServiceConnection)
-        repository: 'repuestera-frontend'
-        command: 'buildAndPush'
-        Dockerfile: 'docker/frontend/Dockerfile'
-        buildContext: '.'
-        tags: |
-          prod-latest
-          prod-$(Build.BuildId)
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Login a ACR
+          az acr login --name $(acrName)
+          
+          # Construir imagen con múltiples tags
+          docker build -f docker/frontend/Dockerfile \
+            -t $(acrName).azurecr.io/repuestera-frontend:prod-latest \
+            -t $(acrName).azurecr.io/repuestera-frontend:prod-$(Build.BuildId) \
+            .
+          
+          # Push todas las imágenes
+          docker push $(acrName).azurecr.io/repuestera-frontend:prod-latest
+          docker push $(acrName).azurecr.io/repuestera-frontend:prod-$(Build.BuildId)
 
 # ============================================================================
 # STAGE QA - Despliegue Automático para Testing con Contenedores
