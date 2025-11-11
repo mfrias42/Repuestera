@@ -591,15 +591,15 @@ stages:
         scriptLocation: 'inlineScript'
         inlineScript: |
           echo "Verificando disponibilidad del backend en $(backendUrlQA)/api/health"
-        for i in {1..30}; do
+          for i in {1..30}; do
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$(backendUrlQA)/api/health" || echo "000")
             if [ "$HTTP_CODE" == "200" ]; then
               echo "✅ Backend QA disponible (HTTP $HTTP_CODE)"
               exit 0
             fi
             echo "⏳ Esperando backend... intento $i/30 (HTTP $HTTP_CODE)"
-          sleep 10
-        done
+            sleep 10
+          done
           echo "⚠️ Backend no respondió en el tiempo esperado"
           exit 1
     
@@ -640,15 +640,15 @@ stages:
           
           echo "CYPRESS_BASE_URL: $CYPRESS_BASE_URL"
           echo "CYPRESS_API_URL: $CYPRESS_API_URL"
-        
-        # Ejecutar tests E2E
-        npx cypress run \
-          --spec "cypress/e2e/*.cy.js" \
-          --config baseUrl=$CYPRESS_BASE_URL \
-          --reporter junit \
-          --reporter-options "mochaFile=cypress/results/cypress-results-[hash].xml"
-      env:
-        CYPRESS_RECORD_KEY: $(cypressRecordKey)
+          
+          # Ejecutar tests E2E
+          npx cypress run \
+            --spec "cypress/e2e/*.cy.js" \
+            --config baseUrl=$CYPRESS_BASE_URL \
+            --reporter junit \
+            --reporter-options "mochaFile=cypress/results/cypress-results-[hash].xml"
+      # env:
+      #   CYPRESS_RECORD_KEY: $(cypressRecordKey) # Descomentar si se configura cypressRecordKey en variables
     
     - task: PublishTestResults@2
       condition: always()
