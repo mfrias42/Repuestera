@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # Base de datos MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: repuestera-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: repuestera_db
+      MYSQL_USER: repuestera_user
+      MYSQL_PASSWORD: repuestera_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - repuestera-network
+
+  # Backend Node.js
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: repuestera-backend
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: repuestera_db
+      DB_USER: repuestera_user
+      DB_PASSWORD: repuestera_pass
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - repuestera-network
+    restart: unless-stopped
+
+  # Frontend React + Nginx
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    container_name: repuestera-frontend
+    environment:
+      API_URL: http://localhost:8000
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - repuestera-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  repuestera-network:
+    driver: bridge
