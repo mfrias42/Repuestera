@@ -48,6 +48,7 @@ Cypress.Commands.add('loginUser', (email, password) => {
   cy.get('button[type="submit"]').click();
   
   // Esperar a que se complete el login y redirija a products
+  // O capturar el mensaje de error si falla
   cy.wait(2000); // Dar tiempo para que procese
   
   cy.url().then((url) => {
@@ -55,11 +56,17 @@ Cypress.Commands.add('loginUser', (email, password) => {
       cy.log(`✅ Login exitoso para ${email}`);
     } else {
       cy.log(`❌ Login falló para ${email}, URL actual: ${url}`);
+      // Intentar capturar mensaje de error si existe
+      cy.get('body').then(($body) => {
+        if ($body.text().includes('error') || $body.text().includes('incorrecta')) {
+          cy.log(`Mensaje de error visible en pantalla`);
+        }
+      });
     }
   });
   
-  // Verificar que estamos en products  
-  cy.url({ timeout: 10000 }).should('include', '/products');
+  // Finalmente verificar que estamos en products
+  cy.url({ timeout: 5000 }).should('include', '/products');
 });
 
 // Comando para registrar Y hacer login (útil para tests que necesitan usuario autenticado)
