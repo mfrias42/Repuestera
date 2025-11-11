@@ -1,7 +1,7 @@
 describe('Test E2E - Gestión de Carrito', () => {
-  // Usuario de prueba para todos los tests
+  // Usuario de prueba para todos los tests - agregar random para evitar colisiones
   const testUser = {
-    email: `carrito_test_${Date.now()}@test.com`,
+    email: `carrito_test_${Date.now()}_${Math.random().toString(36).substring(7)}@test.com`,
     password: 'Password123',
     nombre: 'CarritoTest',
     apellido: 'Usuario'
