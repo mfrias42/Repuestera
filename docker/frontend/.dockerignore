@@ -1,0 +1,44 @@
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+src/**/*.test.js
+src/**/*.test.jsx
+src/__tests__/
+coverage/
+.jest/
+
+# Development
+.env.local
+.env.development
+.env.test
+*.md
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Source (solo necesitamos el build)
+src/
+public/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# CI/CD
+.github/
+.azure/
+azure-pipelines.yml
