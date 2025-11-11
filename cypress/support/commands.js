@@ -17,38 +17,56 @@ Cypress.Commands.add('cleanupTestUsers', () => {
 
 // Comando para registrar un nuevo usuario
 Cypress.Commands.add('registerUser', (userData) => {
-  cy.visit('/register');
-  
-  cy.get('input[name="nombre"]').type(userData.nombre);
-  cy.get('input[name="apellido"]').type(userData.apellido);
-  cy.get('input[name="email"]').type(userData.email);
-  cy.get('input[name="password"]').type(userData.password);
-  cy.get('input[name="confirmPassword"]').type(userData.password);
-  cy.get('input[name="telefono"]').clear();
-  cy.get('input[name="direccion"]').clear();
-  
-  cy.get('button[type="submit"]').click();
-  
-  // Esperar a que aparezca el mensaje de éxito O el mensaje de error (usuario ya existe)
-  // No verificamos redirección aquí para que sea más flexible
-  cy.wait(3000);
+  // Usar API directamente para asegurar el registro
+  cy.request({
+    method: 'POST',
+    url: 'http://localhost:8000/api/auth/register',
+    body: {
+      nombre: userData.nombre,
+      apellido: userData.apellido,
+      email: userData.email,
+      password: userData.password
+    },
+    failOnStatusCode: false // No fallar si hay error
+  }).then((response) => {
+    if (response.status === 201) {
+      cy.log(`✅ Usuario registrado: ${userData.email}`);
+    } else if (response.status === 400 && response.body.message?.includes('ya existe')) {
+      cy.log(`⚠️ Usuario ya existe: ${userData.email}`);
+    } else {
+      cy.log(`❌ Error en registro: ${response.status} - ${JSON.stringify(response.body)}`);
+    }
+  });
 });
 
 // Comando para hacer login
 Cypress.Commands.add('loginUser', (email, password) => {
-  // Si ya estamos en login, no navegar de nuevo
-  cy.url().then((url) => {
-    if (!url.includes('/login')) {
-      cy.visit('/login');
-    }
-  });
+  cy.visit('/login');
   
   cy.get('input[name="email"]').clear().type(email);
   cy.get('input[name="password"]').clear().type(password);
   cy.get('button[type="submit"]').click();
   
   // Esperar a que se complete el login y redirija a products
-  cy.url({ timeout: 10000 }).should('include', '/products');
+  // O capturar el mensaje de error si falla
+  cy.wait(2000); // Dar tiempo para que procese
+  
+  cy.url().then((url) => {
+    if (url.includes('/products')) {
+      cy.log(`✅ Login exitoso para ${email}`);
+    } else {
+      cy.log(`❌ Login falló para ${email}, URL actual: ${url}`);
+      // Intentar capturar mensaje de error si existe
+      cy.get('body').then(($body) => {
+        if ($body.text().includes('error') || $body.text().includes('incorrecta')) {
+          cy.log(`Mensaje de error visible en pantalla`);
+        }
+      });
+    }
+  });
+  
+  // Finalmente verificar que estamos en products
+  cy.url({ timeout: 5000 }).should('include', '/products');
 });
 
 // Comando para registrar Y hacer login (útil para tests que necesitan usuario autenticado)
