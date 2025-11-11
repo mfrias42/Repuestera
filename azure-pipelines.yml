@@ -308,6 +308,7 @@ stages:
               scriptLocation: 'inlineScript'
               inlineScript: |
                 # Configurar el App Service para usar la imagen del contenedor
+                echo "Configurando contenedor Docker..."
                 az webapp config container set \
                   --name $(webAppNameBackendQA) \
                   --resource-group $(APP_SERVICE_RG) \
@@ -316,7 +317,15 @@ stages:
                   --docker-registry-server-user $(ACR_USERNAME) \
                   --docker-registry-server-password $(ACR_PASSWORD)
                 
+                # Configurar linuxFxVersion para Docker (importante para App Services)
+                echo "Configurando linuxFxVersion para Docker..."
+                az webapp config set \
+                  --name $(webAppNameBackendQA) \
+                  --resource-group $(APP_SERVICE_RG) \
+                  --linux-fx-version "DOCKER|$(backendImage)"
+                
                 # Configurar variables de entorno
+                echo "Configurando variables de entorno..."
                 az webapp config appsettings set \
                   --name $(webAppNameBackendQA) \
                   --resource-group $(APP_SERVICE_RG) \
@@ -324,6 +333,7 @@ stages:
                     NODE_ENV=qa \
                     PORT=8000 \
                     WEBSITES_PORT=8000 \
+                    WEBSITES_ENABLE_APP_SERVICE_STORAGE=false \
                     DB_TYPE=mysql \
                     DB_HOST=manufrias.mysql.database.azure.com \
                     DB_PORT=3306 \
@@ -333,10 +343,20 @@ stages:
                     JWT_SECRET=qa_jwt_secret_key_2024 \
                     JWT_EXPIRES_IN=24h
                 
+                # Verificar configuración
+                echo "=== Verificando configuración del contenedor ==="
+                az webapp config container show \
+                  --name $(webAppNameBackendQA) \
+                  --resource-group $(APP_SERVICE_RG) \
+                  --output table
+                
                 # Reiniciar el App Service para aplicar los cambios
+                echo "Reiniciando App Service para aplicar la nueva configuración..."
                 az webapp restart --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG)
                 
                 echo "Backend QA URL: $(backendUrlQA)"
+                echo "Esperando 20 segundos para que el App Service se reinicie..."
+                sleep 20
           
           - task: AzureCLI@2
             displayName: 'Verificar Backend QA disponible'
@@ -345,20 +365,68 @@ stages:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                echo "Verificando disponibilidad del backend en $(backendUrlQA)/api/health"
-                echo "Esperando a que el backend esté disponible..."
-                for i in {1..30}; do
-                  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$(backendUrlQA)/api/health" || echo "000")
-                  if [ "$HTTP_CODE" == "200" ]; then
-                    echo "✅ Backend QA disponible (HTTP $HTTP_CODE)"
+                echo "=== Información del App Service ==="
+                echo "Nombre: $(webAppNameBackendQA)"
+                echo "Resource Group: $(APP_SERVICE_RG)"
+                echo "URL: $(backendUrlQA)"
+                
+                # Verificar estado del App Service
+                APP_STATE=$(az webapp show --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG) --query state -o tsv 2>/dev/null || echo "Unknown")
+                echo "Estado del App Service: $APP_STATE"
+                
+                # Verificar configuración del contenedor
+                echo "=== Configuración del contenedor ==="
+                az webapp config container show --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG) --output table 2>/dev/null || echo "No se pudo obtener configuración del contenedor"
+                
+                # Esperar un poco más después del restart (ya esperamos 20s antes)
+                echo "Esperando 10 segundos adicionales para que el contenedor inicie..."
+                sleep 10
+                
+                echo "=== Verificando disponibilidad del backend ==="
+                echo "Probando endpoint: $(backendUrlQA)/api/health"
+                
+                for i in {1..40}; do
+                  # Probar diferentes endpoints
+                  HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$(backendUrlQA)/api/health" 2>/dev/null || echo "000")
+                  ROOT_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$(backendUrlQA)/" 2>/dev/null || echo "000")
+                  TEST_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$(backendUrlQA)/api/test" 2>/dev/null || echo "000")
+                  
+                  if [ "$HEALTH_CODE" == "200" ]; then
+                    echo "✅ Backend QA disponible (HTTP $HEALTH_CODE en /api/health)"
+                    # Obtener respuesta completa para verificar
+                    curl -s "$(backendUrlQA)/api/health" | head -20
                     exit 0
                   fi
-                  echo "⏳ Esperando backend... intento $i/30 (HTTP $HTTP_CODE)"
+                  
+                  if [ "$i" -le 5 ] || [ "$i" -eq 10 ] || [ "$i" -eq 20 ] || [ "$i" -eq 30 ] || [ "$i" -eq 40 ]; then
+                    echo "Intento $i/40:"
+                    echo "  /api/health: HTTP $HEALTH_CODE"
+                    echo "  /: HTTP $ROOT_CODE"
+                    echo "  /api/test: HTTP $TEST_CODE"
+                    
+                    # Mostrar logs si está fallando
+                    if [ "$i" -eq 10 ] || [ "$i" -eq 20 ] || [ "$i" -eq 30 ]; then
+                      echo "=== Últimas líneas de logs del App Service ==="
+                      az webapp log tail --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG) --num 20 2>/dev/null || echo "No se pudieron obtener logs"
+                    fi
+                  else
+                    echo "⏳ Esperando backend... intento $i/40 (Health: $HEALTH_CODE, Root: $ROOT_CODE, Test: $TEST_CODE)"
+                  fi
+                  
                   sleep 10
                 done
+                
                 echo "⚠️ Backend no respondió en el tiempo esperado"
+                echo "=== Información de debugging ==="
                 echo "Estado del App Service:"
-                az webapp show --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG) --query state -o tsv 2>/dev/null || echo "No se pudo obtener el estado"
+                az webapp show --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG) --query "{state:state, defaultHostName:defaultHostName, enabledHostNames:enabledHostNames}" -o table 2>/dev/null || echo "No se pudo obtener el estado"
+                
+                echo "=== Últimas 50 líneas de logs ==="
+                az webapp log tail --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG) --num 50 2>/dev/null || echo "No se pudieron obtener logs"
+                
+                echo "=== Configuración del contenedor ==="
+                az webapp config container show --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG) -o json 2>/dev/null || echo "No se pudo obtener configuración"
+                
                 exit 1
 
   - deployment: DeployFrontendQA
@@ -410,6 +478,7 @@ stages:
               scriptLocation: 'inlineScript'
               inlineScript: |
                 # Configurar el App Service para usar la imagen del contenedor
+                echo "Configurando contenedor Docker..."
                 az webapp config container set \
                   --name $(webAppNameFrontendQA) \
                   --resource-group $(FRONTEND_RG) \
@@ -418,12 +487,21 @@ stages:
                   --docker-registry-server-user $(ACR_USERNAME) \
                   --docker-registry-server-password $(ACR_PASSWORD)
                 
+                # Configurar linuxFxVersion para Docker
+                echo "Configurando linuxFxVersion para Docker..."
+                az webapp config set \
+                  --name $(webAppNameFrontendQA) \
+                  --resource-group $(FRONTEND_RG) \
+                  --linux-fx-version "DOCKER|$(frontendImage)"
+                
                 # Configurar variables de entorno
+                echo "Configurando variables de entorno..."
                 az webapp config appsettings set \
                   --name $(webAppNameFrontendQA) \
                   --resource-group $(FRONTEND_RG) \
                   --settings \
-                    REACT_APP_API_URL=$(backendUrlQA)
+                    REACT_APP_API_URL=$(backendUrlQA) \
+                    WEBSITES_ENABLE_APP_SERVICE_STORAGE=false
                 
                 # Reiniciar el App Service para aplicar los cambios
                 az webapp restart --name $(webAppNameFrontendQA) --resource-group $(FRONTEND_RG)
@@ -613,6 +691,7 @@ stages:
               scriptLocation: 'inlineScript'
               inlineScript: |
                 # Configurar el App Service para usar la imagen del contenedor
+                echo "Configurando contenedor Docker..."
                 az webapp config container set \
                   --name $(webAppNameBackendProd) \
                   --resource-group $(PROD_BACKEND_RG) \
@@ -621,7 +700,15 @@ stages:
                   --docker-registry-server-user $(ACR_USERNAME) \
                   --docker-registry-server-password $(ACR_PASSWORD)
                 
+                # Configurar linuxFxVersion para Docker
+                echo "Configurando linuxFxVersion para Docker..."
+                az webapp config set \
+                  --name $(webAppNameBackendProd) \
+                  --resource-group $(PROD_BACKEND_RG) \
+                  --linux-fx-version "DOCKER|$(backendImage)"
+                
                 # Configurar variables de entorno
+                echo "Configurando variables de entorno..."
                 az webapp config appsettings set \
                   --name $(webAppNameBackendProd) \
                   --resource-group $(PROD_BACKEND_RG) \
@@ -629,6 +716,7 @@ stages:
                     NODE_ENV=production \
                     PORT=8000 \
                     WEBSITES_PORT=8000 \
+                    WEBSITES_ENABLE_APP_SERVICE_STORAGE=false \
                     DB_TYPE=mysql \
                     DB_HOST=manufrias.mysql.database.azure.com \
                     DB_PORT=3306 \
@@ -638,10 +726,20 @@ stages:
                     JWT_SECRET=prod_jwt_secret_key_secure_2024 \
                     JWT_EXPIRES_IN=24h
                 
+                # Verificar configuración
+                echo "=== Verificando configuración del contenedor ==="
+                az webapp config container show \
+                  --name $(webAppNameBackendProd) \
+                  --resource-group $(PROD_BACKEND_RG) \
+                  --output table
+                
                 # Reiniciar el App Service para aplicar los cambios
+                echo "Reiniciando App Service para aplicar la nueva configuración..."
                 az webapp restart --name $(webAppNameBackendProd) --resource-group $(PROD_BACKEND_RG)
                 
                 echo "Backend Production URL: $(backendUrlProd)"
+                echo "Esperando 20 segundos para que el App Service se reinicie..."
+                sleep 20
           
           - task: AzureCLI@2
             displayName: 'Verificar Backend Production disponible'
@@ -650,20 +748,68 @@ stages:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                echo "Verificando disponibilidad del backend en $(backendUrlProd)/api/health"
-                echo "Esperando a que el backend esté disponible..."
-                for i in {1..30}; do
-                  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$(backendUrlProd)/api/health" || echo "000")
-                  if [ "$HTTP_CODE" == "200" ]; then
-                    echo "✅ Backend Production disponible (HTTP $HTTP_CODE)"
+                echo "=== Información del App Service ==="
+                echo "Nombre: $(webAppNameBackendProd)"
+                echo "Resource Group: $(PROD_BACKEND_RG)"
+                echo "URL: $(backendUrlProd)"
+                
+                # Verificar estado del App Service
+                APP_STATE=$(az webapp show --name $(webAppNameBackendProd) --resource-group $(PROD_BACKEND_RG) --query state -o tsv 2>/dev/null || echo "Unknown")
+                echo "Estado del App Service: $APP_STATE"
+                
+                # Verificar configuración del contenedor
+                echo "=== Configuración del contenedor ==="
+                az webapp config container show --name $(webAppNameBackendProd) --resource-group $(PROD_BACKEND_RG) --output table 2>/dev/null || echo "No se pudo obtener configuración del contenedor"
+                
+                # Esperar un poco más después del restart (ya esperamos 20s antes)
+                echo "Esperando 10 segundos adicionales para que el contenedor inicie..."
+                sleep 10
+                
+                echo "=== Verificando disponibilidad del backend ==="
+                echo "Probando endpoint: $(backendUrlProd)/api/health"
+                
+                for i in {1..40}; do
+                  # Probar diferentes endpoints
+                  HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$(backendUrlProd)/api/health" 2>/dev/null || echo "000")
+                  ROOT_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$(backendUrlProd)/" 2>/dev/null || echo "000")
+                  TEST_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$(backendUrlProd)/api/test" 2>/dev/null || echo "000")
+                  
+                  if [ "$HEALTH_CODE" == "200" ]; then
+                    echo "✅ Backend Production disponible (HTTP $HEALTH_CODE en /api/health)"
+                    # Obtener respuesta completa para verificar
+                    curl -s "$(backendUrlProd)/api/health" | head -20
                     exit 0
                   fi
-                  echo "⏳ Esperando backend... intento $i/30 (HTTP $HTTP_CODE)"
+                  
+                  if [ "$i" -le 5 ] || [ "$i" -eq 10 ] || [ "$i" -eq 20 ] || [ "$i" -eq 30 ] || [ "$i" -eq 40 ]; then
+                    echo "Intento $i/40:"
+                    echo "  /api/health: HTTP $HEALTH_CODE"
+                    echo "  /: HTTP $ROOT_CODE"
+                    echo "  /api/test: HTTP $TEST_CODE"
+                    
+                    # Mostrar logs si está fallando
+                    if [ "$i" -eq 10 ] || [ "$i" -eq 20 ] || [ "$i" -eq 30 ]; then
+                      echo "=== Últimas líneas de logs del App Service ==="
+                      az webapp log tail --name $(webAppNameBackendProd) --resource-group $(PROD_BACKEND_RG) --num 20 2>/dev/null || echo "No se pudieron obtener logs"
+                    fi
+                  else
+                    echo "⏳ Esperando backend... intento $i/40 (Health: $HEALTH_CODE, Root: $ROOT_CODE, Test: $TEST_CODE)"
+                  fi
+                  
                   sleep 10
                 done
+                
                 echo "⚠️ Backend no respondió en el tiempo esperado"
+                echo "=== Información de debugging ==="
                 echo "Estado del App Service:"
-                az webapp show --name $(webAppNameBackendProd) --resource-group $(PROD_BACKEND_RG) --query state -o tsv 2>/dev/null || echo "No se pudo obtener el estado"
+                az webapp show --name $(webAppNameBackendProd) --resource-group $(PROD_BACKEND_RG) --query "{state:state, defaultHostName:defaultHostName, enabledHostNames:enabledHostNames}" -o table 2>/dev/null || echo "No se pudo obtener el estado"
+                
+                echo "=== Últimas 50 líneas de logs ==="
+                az webapp log tail --name $(webAppNameBackendProd) --resource-group $(PROD_BACKEND_RG) --num 50 2>/dev/null || echo "No se pudieron obtener logs"
+                
+                echo "=== Configuración del contenedor ==="
+                az webapp config container show --name $(webAppNameBackendProd) --resource-group $(PROD_BACKEND_RG) -o json 2>/dev/null || echo "No se pudo obtener configuración"
+                
                 exit 1
 
   - deployment: DeployFrontendProd
@@ -715,6 +861,7 @@ stages:
               scriptLocation: 'inlineScript'
               inlineScript: |
                 # Configurar el App Service para usar la imagen del contenedor
+                echo "Configurando contenedor Docker..."
                 az webapp config container set \
                   --name $(webAppNameFrontendProd) \
                   --resource-group $(PROD_FRONTEND_RG) \
@@ -723,12 +870,21 @@ stages:
                   --docker-registry-server-user $(ACR_USERNAME) \
                   --docker-registry-server-password $(ACR_PASSWORD)
                 
+                # Configurar linuxFxVersion para Docker
+                echo "Configurando linuxFxVersion para Docker..."
+                az webapp config set \
+                  --name $(webAppNameFrontendProd) \
+                  --resource-group $(PROD_FRONTEND_RG) \
+                  --linux-fx-version "DOCKER|$(frontendImage)"
+                
                 # Configurar variables de entorno
+                echo "Configurando variables de entorno..."
                 az webapp config appsettings set \
                   --name $(webAppNameFrontendProd) \
                   --resource-group $(PROD_FRONTEND_RG) \
                   --settings \
-                    REACT_APP_API_URL=$(backendUrlProd)
+                    REACT_APP_API_URL=$(backendUrlProd) \
+                    WEBSITES_ENABLE_APP_SERVICE_STORAGE=false
                 
                 # Reiniciar el App Service para aplicar los cambios
                 az webapp restart --name $(webAppNameFrontendProd) --resource-group $(PROD_FRONTEND_RG)
