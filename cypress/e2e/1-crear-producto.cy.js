@@ -21,10 +21,10 @@ describe('Test E2E - Flujo Completo de Creación de Usuario', () => {
     // Enviar formulario
     cy.get('button[type="submit"]').click();
 
-    // Verificar mensaje de éxito (el texto completo del frontend)
+    // Verificar mensaje de éxito específico
     cy.contains(/Usuario registrado exitosamente/i, { timeout: 10000 }).should('be.visible');
     
-    // Verificar que después redirige al login (esperar los 2 segundos del setTimeout)
+    // Verificar que después redirige al login
     cy.url({ timeout: 5000 }).should('include', '/login');
   });
 
