@@ -6,10 +6,11 @@ module.exports = defineConfig({
     baseUrl: process.env.CYPRESS_BASE_URL || 'http://localhost:3000',
     
     // Configuración de espera y timeouts
-    defaultCommandTimeout: 10000,
-    pageLoadTimeout: 60000,
-    requestTimeout: 10000,
-    responseTimeout: 30000,
+    // Timeouts aumentados para entornos CI que pueden ser más lentos
+    defaultCommandTimeout: process.env.CI ? 20000 : 10000,
+    pageLoadTimeout: process.env.CI ? 120000 : 60000,
+    requestTimeout: process.env.CI ? 20000 : 10000,
+    responseTimeout: process.env.CI ? 60000 : 30000,
     
     // Configuración de video y screenshots
     video: true,
