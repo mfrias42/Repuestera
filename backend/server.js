@@ -15,16 +15,18 @@ const testRoutes = require('./routes/test-simple');
 const { testConnection, initializeTables } = require('./config/database-mysql');
 const { fixDatabase } = require('./scripts/fixDatabase');
 
-// Probar conexión a la base de datos al iniciar (sin reparación automática)
+// Probar conexión a la base de datos al iniciar y crear tablas
 testConnection().then(success => {
   if (success) {
     console.log('✅ Base de datos conectada correctamente');
-    // Comentado para evitar timeout en el pipeline
-    // return fixDatabase();
+    // Inicializar tablas en Azure MySQL
+    return initializeTables();
   } else {
     console.error('❌ Error conectando a la base de datos');
     throw new Error('No se pudo conectar a la base de datos');
   }
+}).then(() => {
+  console.log('✅ Tablas MySQL inicializadas correctamente');
 }).catch(console.error);
 
 const app = express();
