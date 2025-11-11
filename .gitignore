@@ -1,1 +1,11 @@
 node_modules
+
+# Archivos de coverage HTML
+backend/coverage/**/*.html
+
+# Test files vacíos (WIP)
+frontend/src/pages/__tests__/
+backend/routes/health.js
+backend/scripts/initTestDatabase.js
+decisiones7.md
+
