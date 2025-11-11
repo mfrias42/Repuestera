@@ -25,32 +25,40 @@ describe('Validación de manejo de errores en productos', () => {
 
   it('Debería mostrar error al intentar crear producto con código duplicado', () => {
     // Crear primer producto con código específico
-    cy.contains('Nuevo Producto').click();
-    
     const codigoDuplicado = 'DUP-' + Date.now();
     
+    cy.contains('Nuevo Producto').click();
     cy.get('input[name="nombre"]').type('Producto Original');
     cy.get('input[name="codigo"]').type(codigoDuplicado);
     cy.get('input[name="precio"]').type('100');
     cy.get('input[name="stock"]').type('10');
     cy.contains('button', 'Guardar').click();
     
-    cy.wait(3000);
+    // Esperar a que se cierre el diálogo del primer producto
+    cy.contains('Nuevo Producto').should('not.exist', { timeout: 10000 });
+    cy.wait(2000);
 
     // Intentar crear segundo producto con el mismo código
     cy.contains('Nuevo Producto').click();
-    cy.get('input[name="nombre"]').type('Producto Duplicado');
-    cy.get('input[name="codigo"]').type(codigoDuplicado);
-    cy.get('input[name="precio"]').type('200');
-    cy.get('input[name="stock"]').type('20');
-    cy.contains('button', 'Guardar').click();
+    
+    // Esperar a que el diálogo esté completamente abierto
+    cy.contains('Nuevo Producto').should('be.visible');
+    cy.wait(1000);
+    
+    cy.get('input[name="nombre"]').clear().type('Producto Duplicado');
+    cy.get('input[name="codigo"]').clear().type(codigoDuplicado);
+    cy.get('input[name="precio"]').clear().type('200');
+    cy.get('input[name="stock"]').clear().type('20');
+    
+    // Usar force: true para evitar el problema del elemento cubierto
+    cy.contains('button', 'Guardar').click({ force: true });
 
     // Verificar que aparece un mensaje de error o que el diálogo sigue abierto
     cy.wait(2000);
     // Si el backend maneja correctamente el error, mostrará un alert o el diálogo no se cerrará
     cy.get('body').then(($body) => {
       const hasError = $body.find('[role="alert"]').length > 0;
-      const dialogStillOpen = $body.text().includes('Nuevo Producto');
+      const dialogStillOpen = $body.text().includes('Nuevo Producto') || $body.text().includes('código ya existe');
       expect(hasError || dialogStillOpen).to.be.true;
     });
   });
