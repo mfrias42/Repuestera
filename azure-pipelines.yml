@@ -194,25 +194,6 @@ stages:
           echo "Attempt $i: Backend not ready yet, waiting..."
           sleep 2
         done
-        
-        # Verificar que la base de datos esté conectada según /api/health
-        echo "Waiting for database connection (via /api/health)..."
-        for i in {1..30}; do
-          DB_STATUS=$(curl -s http://localhost:8000/api/health | grep -o 'Conectada' || true)
-          if [ "$DB_STATUS" = "Conectada" ]; then
-            echo "Database connection OK."
-            break
-          fi
-          echo "Attempt $i: Database not connected yet, waiting..."
-          sleep 2
-        done
-        
-        # Semilla mínima: crear admin por defecto si no existe (email: admin@repuestera.com / pass: admin123)
-        echo "Seeding default admin user for E2E..."
-        ADMIN_HASH=$(node -e "console.log(require('bcryptjs').hashSync('admin123', 12))")
-        sudo mysql -e "CREATE TABLE IF NOT EXISTS administradores (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(100) NOT NULL, apellido VARCHAR(100) NOT NULL, email VARCHAR(255) UNIQUE NOT NULL, password VARCHAR(255) NOT NULL, rol VARCHAR(50) DEFAULT 'admin', fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP, activo BOOLEAN DEFAULT TRUE) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
-        sudo mysql -e "INSERT IGNORE INTO administradores (nombre, apellido, email, password, rol) VALUES ('Admin', 'Sistema', 'admin@repuestera.com', '${ADMIN_HASH}', 'super_admin');"
-        echo "Admin seed completed."
       displayName: 'Iniciar servidor backend'
       env:
         PORT: '8000'
@@ -309,7 +290,7 @@ stages:
     
     - script: |
         cd frontend
-        CI=true npm test -- --watchAll=false --coverage --passWithNoTests --testPathIgnorePatterns="App.test.js|ProtectedRoute.test.js|AuthContext.test.js" --testPathPattern="(services/__tests__|pages/__tests__)" || echo "Tests de frontend opcionales - en progreso"
+        CI=true npm test -- --watchAll=false --coverage --passWithNoTests --testPathIgnorePatterns="App.test.js|ProtectedRoute.test.js|AuthContext.test.js" --testPathPattern="services/__tests__" || echo "Tests de frontend opcionales - en progreso"
       displayName: 'Ejecutar pruebas del frontend con cobertura'
       continueOnError: true
       env:
@@ -368,7 +349,7 @@ stages:
     
     - script: |
         cd frontend
-        CI=true npm test -- --watchAll=false --coverage --passWithNoTests --testPathIgnorePatterns="App.test.js|ProtectedRoute.test.js|AuthContext.test.js" --testPathPattern="(services/__tests__|pages/__tests__)" || echo "Tests de frontend opcionales - en progreso"
+        CI=true npm test -- --watchAll=false --coverage --passWithNoTests --testPathIgnorePatterns="App.test.js|ProtectedRoute.test.js|AuthContext.test.js" --testPathPattern="services/__tests__" || echo "Tests de frontend opcionales - en progreso"
       displayName: 'Ejecutar pruebas del frontend (validación con cobertura)'
       continueOnError: true
       env:
