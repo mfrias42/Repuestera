@@ -3,7 +3,7 @@
 describe('Validación de manejo de errores en productos', () => {
   beforeEach(() => {
     // Login como admin antes de cada test
-    cy.visit('http://localhost:3000/login');
+    cy.visit('/login');
     cy.get('input[name="email"]').type('admin@repuestera.com');
     cy.get('input[name="password"]').type('admin123');
     cy.get('input[name="isAdmin"]').click({ force: true });
