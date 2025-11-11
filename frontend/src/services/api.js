@@ -59,38 +59,22 @@ export const authService = {
 
   // Login de usuario
   login: async (credentials) => {
-    console.log('🌐 [API] Enviando petición de login:', { email: credentials.email });
-    try {
-      const response = await api.post('/auth/login', credentials);
-      console.log('✅ [API] Login response:', response.status, response.data);
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        console.log('✅ [API] Token guardado en localStorage');
-      }
-      return response.data;
-    } catch (error) {
-      console.error('❌ [API] Error en login:', error.response?.status, error.response?.data);
-      throw error;
+    const response = await api.post('/auth/login', credentials);
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
     }
+    return response.data;
   },
 
   // Login de administrador
   adminLogin: async (credentials) => {
-    console.log('🌐 [API] Enviando petición de admin login:', { email: credentials.email });
-    try {
-      const response = await api.post('/auth/admin/login', credentials);
-      console.log('✅ [API] Admin login response:', response.status, response.data);
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.admin));
-        console.log('✅ [API] Admin token guardado en localStorage');
-      }
-      return response.data;
-    } catch (error) {
-      console.error('❌ [API] Error en admin login:', error.response?.status, error.response?.data);
-      throw error;
+    const response = await api.post('/auth/admin/login', credentials);
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.admin));
     }
+    return response.data;
   },
 
   // Obtener información del usuario autenticado

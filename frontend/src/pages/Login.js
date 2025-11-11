@@ -38,16 +38,10 @@ const Login = () => {
     setError('');
     setLoading(true);
 
-    console.log('🔵 [Login] Iniciando login con:', { email: formData.email, isAdmin });
-
     try {
-      const response = await login(formData, isAdmin);
-      console.log('✅ [Login] Login exitoso, response:', response);
-      console.log('✅ [Login] Navegando a:', isAdmin ? '/admin' : '/products');
+      await login(formData, isAdmin);
       navigate(isAdmin ? '/admin' : '/products');
     } catch (error) {
-      console.error('❌ [Login] Error en login:', error);
-      console.error('❌ [Login] Error details:', error.response?.data);
       setError(error.response?.data?.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
