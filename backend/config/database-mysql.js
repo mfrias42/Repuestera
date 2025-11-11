@@ -4,10 +4,10 @@ require('dotenv').config({ override: false });
 
 // Configuración de Azure Database for MySQL Flexible Server
 const config = {
-  host: process.env.DB_HOST || 'manufrias.mysql.database.azure.com',
+  host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || 'A',
-  password: process.env.DB_PASSWORD || '4286Pka1#',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'repuestera_db',
   ssl: {
     rejectUnauthorized: false // Para Azure MySQL Flexible Server
