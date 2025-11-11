@@ -1,8 +1,1 @@
 node_modules
-
-# Cypress
-cypress/videos
-cypress/screenshots
-cypress/downloads
-cypress/results
-cypress.env.json

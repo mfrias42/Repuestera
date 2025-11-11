@@ -16,12 +16,7 @@
     "build": "npm run frontend:build",
     "test": "npm run backend:test && npm run frontend:test",
     "backend:test": "cd backend && npm test",
-    "frontend:test": "cd frontend && npm test",
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run",
-    "cypress:run:chrome": "cypress run --browser chrome",
-    "cypress:run:headed": "cypress run --headed --browser chrome",
-    "e2e": "start-server-and-test 'npm run dev' http://localhost:3000 'npm run cypress:run'"
+    "frontend:test": "cd frontend && npm test"
   },
   "keywords": [
     "repuestera",
@@ -34,11 +29,7 @@
   "author": "Tu Nombre",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "cypress": "^15.6.0",
-    "cypress-multi-reporters": "^2.0.5",
-    "mocha-junit-reporter": "^2.2.1",
-    "start-server-and-test": "^2.1.2"
+    "concurrently": "^8.2.2"
   },
   "engines": {
     "node": ">=16.0.0",
