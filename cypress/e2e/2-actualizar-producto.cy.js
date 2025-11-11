@@ -8,6 +8,8 @@ describe('Test E2E - Gestión de Carrito', () => {
   };
 
   before(() => {
+    // Limpiar usuarios de test antes de empezar
+    cy.cleanupTestUsers();
     // Registrar usuario una sola vez para todos los tests
     cy.registerUser(testUser);
   });

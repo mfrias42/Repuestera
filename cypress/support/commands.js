@@ -2,6 +2,19 @@
 // Comandos custom para tests E2E
 // ***********************************************
 
+// Comando para limpiar usuarios de test antes de empezar
+Cypress.Commands.add('cleanupTestUsers', () => {
+  cy.request({
+    method: 'DELETE',
+    url: 'http://localhost:8000/api/test-cleanup/cleanup-test-users',
+    failOnStatusCode: false // No fallar si el endpoint no existe
+  }).then((response) => {
+    if (response.status === 200) {
+      cy.log(`✅ Usuarios de test eliminados: ${response.body.deletedCount}`);
+    }
+  });
+});
+
 // Comando para registrar un nuevo usuario
 Cypress.Commands.add('registerUser', (userData) => {
   cy.visit('/register');
