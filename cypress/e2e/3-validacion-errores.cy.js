@@ -1,8 +1,8 @@
 describe('Test E2E - Validación de Errores y Casos Límite', () => {
   
-  // Usuario de prueba para estos tests - será creado en el before - agregar random para evitar colisiones
+  // Usuario de prueba para estos tests - será creado en el before
   const testUser = {
-    email: `validacion_test_${Date.now()}_${Math.random().toString(36).substring(7)}@test.com`,
+    email: `validacion_test_${Date.now()}@test.com`,
     password: 'Password123',
     nombre: 'ValidacionTest',
     apellido: 'Usuario'
