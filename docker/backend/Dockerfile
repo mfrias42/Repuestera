@@ -4,12 +4,14 @@ FROM node:20-alpine AS runtime
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar los archivos del backend (asume que vienen del artifact)
-# Se espera que el contexto de build contenga los archivos compilados
-COPY . .
+# Copiar package files del backend
+COPY backend/package*.json ./
 
 # Instalar solo dependencias de producción
 RUN npm ci --only=production
+
+# Copiar los archivos del backend
+COPY backend/ .
 
 # Exponer el puerto donde corre el backend
 EXPOSE 8000
