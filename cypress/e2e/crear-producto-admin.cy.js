@@ -3,7 +3,7 @@
 describe('Flujo de creación de producto como admin', () => {
   it('Debería permitir a un admin crear un producto', () => {
     // Ir a la página de login
-    cy.visit('http://localhost:3000/login');
+    cy.visit('/login');
 
     // Completar login como admin
     cy.get('input[name="email"]').type('admin@repuestera.com');

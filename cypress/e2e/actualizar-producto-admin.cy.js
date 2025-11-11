@@ -2,8 +2,8 @@
 
 describe('Flujo de actualización de producto como admin', () => {
   it('Debería permitir a un admin actualizar un producto existente', () => {
-    // Login como admin
-    cy.visit('http://localhost:3000/login');
+    // Ir a la página de login
+    cy.visit('/login');
     cy.get('input[name="email"]').type('admin@repuestera.com');
     cy.get('input[name="password"]').type('admin123');
     cy.get('input[name="isAdmin"]').click({ force: true });
