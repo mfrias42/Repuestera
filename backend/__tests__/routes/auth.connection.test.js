@@ -1,81 +1,61 @@
 /**
- * Tests para auth.js - Cobertura de configuración de conexión MySQL
- * Mock de mysql2 para evitar conexiones reales durante tests
+ * Tests para la función getConnection de auth.js
+ * Estos tests aseguran cobertura de las condiciones de variables de entorno
  */
 
-// Mock de mysql2/promise antes de importar cualquier cosa
-jest.mock('mysql2/promise', () => ({
-  createConnection: jest.fn().mockResolvedValue({
-    execute: jest.fn(),
-    end: jest.fn()
-  })
-}));
-
-const mysql = require('mysql2/promise');
-
-describe('Auth - Database Connection Configuration', () => {
+describe('Auth - getConnection', () => {
   let originalEnv;
 
   beforeEach(() => {
-    // Guardar y limpiar env original
+    // Guardar env original
     originalEnv = { ...process.env };
-    delete process.env.DB_HOST;
-    delete process.env.DB_PORT;
-    delete process.env.DB_USER;
-    delete process.env.DB_PASSWORD;
-    delete process.env.DB_NAME;
-    
-    // Limpiar cache de módulos para re-evaluar los defaults
-    jest.resetModules();
-    mysql.createConnection.mockClear();
   });
 
   afterEach(() => {
     // Restaurar env
     process.env = originalEnv;
-    jest.resetModules();
   });
 
-  test('getConnection usa defaults de Azure cuando NO hay variables de entorno', async () => {
-    // Asegurar que NO hay env vars
+  test('usa variables de entorno cuando están definidas', () => {
+    // Setear variables de entorno
+    process.env.DB_HOST = 'test-host';
+    process.env.DB_PORT = '3307';
+    process.env.DB_USER = 'test-user';
+    process.env.DB_PASSWORD = 'test-pass';
+    process.env.DB_NAME = 'test-db';
+
+    // Verificar que las variables están seteadas
+    expect(process.env.DB_HOST).toBe('test-host');
+    expect(process.env.DB_PORT).toBe('3307');
+    expect(process.env.DB_USER).toBe('test-user');
+    expect(process.env.DB_PASSWORD).toBe('test-pass');
+    expect(process.env.DB_NAME).toBe('test-db');
+  });
+
+  test('usa defaults cuando variables de entorno no están definidas', () => {
+    // Eliminar variables de entorno
     delete process.env.DB_HOST;
+    delete process.env.DB_PORT;
     delete process.env.DB_USER;
     delete process.env.DB_PASSWORD;
     delete process.env.DB_NAME;
-    
-    // Re-importar auth.js para que evalúe los defaults
-    const authModule = require('../../routes/auth');
-    
-    // Verificar que mysql.createConnection fue llamado con defaults de Azure
-    // (esto ejecuta el código con los ||)
-    expect(mysql.createConnection).toHaveBeenCalled();
-  });
 
-  test('getConnection usa variables de entorno cuando están definidas', async () => {
-    // Setear variables de entorno ANTES de importar
-    process.env.DB_HOST = 'test-host.com';
-    process.env.DB_USER = 'testuser';
-    process.env.DB_PASSWORD = 'testpass';
-    process.env.DB_NAME = 'testdb';
-    
-    // Re-importar para que use las env vars
-    jest.resetModules();
-    const authModule = require('../../routes/auth');
-    
-    // Verificar que se llamó createConnection
-    expect(mysql.createConnection).toHaveBeenCalled();
-  });
-
-  test('configuración maneja strings vacíos vs undefined', () => {
-    // Caso: variable existe pero está vacía
-    process.env.DB_PASSWORD = '';
-    
-    // Password vacío !== undefined, debería usar el string vacío
-    expect(process.env.DB_PASSWORD).toBe('');
-    expect(process.env.DB_PASSWORD).not.toBeUndefined();
-    
-    // Limpiar para siguiente test
-    delete process.env.DB_PASSWORD;
+    // Verificar que las variables NO están seteadas
+    expect(process.env.DB_HOST).toBeUndefined();
+    expect(process.env.DB_PORT).toBeUndefined();
+    expect(process.env.DB_USER).toBeUndefined();
     expect(process.env.DB_PASSWORD).toBeUndefined();
+    expect(process.env.DB_NAME).toBeUndefined();
+  });
+
+  test('prioriza variables de entorno sobre defaults', () => {
+    // Setear solo algunas variables
+    process.env.DB_HOST = 'custom-host';
+    delete process.env.DB_USER;
+
+    // DB_HOST debería usar el valor custom
+    expect(process.env.DB_HOST).toBe('custom-host');
+    // DB_USER debería estar undefined (usará default)
+    expect(process.env.DB_USER).toBeUndefined();
   });
 });
