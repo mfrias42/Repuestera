@@ -1,6 +1,6 @@
 # Azure DevOps Release Pipeline para Repuestera
 # Despliegue multi-ambiente: QA → Producción
-# TP06 - Pruebas Unitarias con CI/CD
+# TP08 - Despliegue con Contenedores Docker
 # Tests automáticos antes de cada despliegue
 
 trigger:
@@ -15,16 +15,22 @@ variables:
   # Configuración de Node.js
   nodeVersion: '20.x'
   
-  # Variables QA
-  webAppNameBackendQA: 'repuestera-api-qa'
-  webAppNameFrontendQA: 'repuestera-web-qa'
-  apiUrlQA: 'https://repuestera-api-qa.azurewebsites.net/api'
+  # Variables Azure Container Registry
+  acrName: 'repusteraacr'
+  acrServiceConnection: 'ACR-ServiceConnection'
   
-  # Variables Producción
-  webAppNameBackendProd: 'repuestera-api-prod'
-  webAppNameFrontendProd: 'repuestera-web-prod'
-  apiUrlProd: 'https://repuestera-api-prod.azurewebsites.net/api'
-
+  # Variables QA - Container Instances
+  containerNameBackendQA: 'repuestera-backend-qa'
+  containerNameFrontendQA: 'repuestera-frontend-qa'
+  dnsLabelBackendQA: 'repuestera-backend-qa'
+  dnsLabelFrontendQA: 'repuestera-frontend-qa'
+  
+  # Variables Producción - Container Instances
+  containerNameBackendProd: 'repuestera-backend-prod'
+  containerNameFrontendProd: 'repuestera-frontend-prod'
+  dnsLabelBackendProd: 'repuestera-backend-prod'
+  dnsLabelFrontendProd: 'repuestera-frontend-prod'
+  
   # Variables SonarCloud
   sonarCloudServiceConnection: 'SonarCloud'
   sonarCloudOrganization: 'mfrias42'
@@ -110,21 +116,19 @@ stages:
       inputs:
         pollingTimeoutSec: '300'
 
-    - task: ArchiveFiles@2
+    - task: Docker@2
+      displayName: 'Construir imagen Docker del backend'
       inputs:
-        rootFolderOrFile: 'backend'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/backend.zip'
-        replaceExistingArchive: true
-      displayName: 'Comprimir archivos del backend'
-
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)/backend.zip'
-        ArtifactName: 'backend-drop'
-        publishLocation: 'Container'
-      displayName: 'Publicar artefacto del backend'
+        containerRegistry: $(acrServiceConnection)
+        repository: 'repuestera-backend'
+        command: 'buildAndPush'
+        Dockerfile: 'docker/backend/Dockerfile'
+        buildContext: '.'
+        tags: |
+          latest
+          $(Build.BuildId)
+          qa-$(Build.BuildId)
+          prod-$(Build.BuildId)
 
   - job: BuildFrontendQA
     displayName: 'Construir Frontend para QA'
@@ -132,6 +136,9 @@ stages:
       vmImage: 'ubuntu-latest'
     
     steps:
+    - checkout: self
+      fetchDepth: 0
+    
     - task: NodeTool@0
       inputs:
         versionSpec: $(nodeVersion)
@@ -161,29 +168,17 @@ stages:
       continueOnError: true
       condition: always()
     
-    - script: |
-        cd frontend
-        npm run build
-      displayName: 'Construir frontend para QA'
-      env:
-        REACT_APP_API_URL: $(apiUrlQA)
-        NODE_ENV: 'production'
-
-    - task: ArchiveFiles@2
+    - task: Docker@2
+      displayName: 'Construir imagen Docker del frontend para QA'
       inputs:
-        rootFolderOrFile: 'frontend/build'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/frontend-qa.zip'
-        replaceExistingArchive: true
-      displayName: 'Comprimir build del frontend QA'
-
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)/frontend-qa.zip'
-        ArtifactName: 'frontend-qa-drop'
-        publishLocation: 'Container'
-      displayName: 'Publicar artefacto del frontend QA'
+        containerRegistry: $(acrServiceConnection)
+        repository: 'repuestera-frontend'
+        command: 'buildAndPush'
+        Dockerfile: 'docker/frontend/Dockerfile'
+        buildContext: '.'
+        tags: |
+          qa-latest
+          qa-$(Build.BuildId)
 
   - job: BuildFrontendProd
     displayName: 'Construir Frontend para Producción'
@@ -191,6 +186,9 @@ stages:
       vmImage: 'ubuntu-latest'
     
     steps:
+    - checkout: self
+      fetchDepth: 0
+    
     - task: NodeTool@0
       inputs:
         versionSpec: $(nodeVersion)
@@ -210,45 +208,35 @@ stages:
         CI: 'true'
         NODE_ENV: 'test'
 
-    - script: |
-        cd frontend
-        npm run build
-      displayName: 'Construir frontend para Producción'
-      env:
-        REACT_APP_API_URL: $(apiUrlProd)
-        NODE_ENV: 'production'
-
-    - task: ArchiveFiles@2
+    - task: Docker@2
+      displayName: 'Construir imagen Docker del frontend para Producción'
       inputs:
-        rootFolderOrFile: 'frontend/build'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/frontend-prod.zip'
-        replaceExistingArchive: true
-      displayName: 'Comprimir build del frontend Producción'
-
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)/frontend-prod.zip'
-        ArtifactName: 'frontend-prod-drop'
-        publishLocation: 'Container'
-      displayName: 'Publicar artefacto del frontend Producción'
+        containerRegistry: $(acrServiceConnection)
+        repository: 'repuestera-frontend'
+        command: 'buildAndPush'
+        Dockerfile: 'docker/frontend/Dockerfile'
+        buildContext: '.'
+        tags: |
+          prod-latest
+          prod-$(Build.BuildId)
 
 # ============================================================================
-# STAGE QA - Despliegue Automático para Testing
+# STAGE QA - Despliegue Automático para Testing con Contenedores
 # ============================================================================
 - stage: DeployQA
-  displayName: '🧪 QA Environment'
+  displayName: '🧪 QA Environment (Containers)'
   dependsOn: Build
   condition: succeeded()
   
   variables:
     NODE_ENV: 'qa'
-    API_URL: $(apiUrlQA)
+    acrLoginServer: '$(acrName).azurecr.io'
+    backendImage: '$(acrLoginServer)/repuestera-backend:qa-$(Build.BuildId)'
+    frontendImage: '$(acrLoginServer)/repuestera-frontend:qa-$(Build.BuildId)'
   
   jobs:
   - deployment: DeployBackendQA
-    displayName: 'Deploy API to QA'
+    displayName: 'Deploy Backend Container to QA'
     pool:
       vmImage: 'ubuntu-latest'
     environment: 'qa-backend'
@@ -256,99 +244,99 @@ stages:
       runOnce:
         deploy:
           steps:
-          - download: current
-            artifact: backend-drop
-            displayName: 'Download Backend Artifact'
-            
-          - task: AzureWebApp@1
+          - task: AzureCLI@2
+            displayName: 'Obtener credenciales ACR'
             inputs:
               azureSubscription: $(azureSubscription)
-              appType: 'webAppLinux'
-              appName: $(webAppNameBackendQA)
-              resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
-              runtimeStack: 'NODE|20-lts'
-              startUpCommand: 'npm start'
-            displayName: 'Deploy Backend to QA'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                ACR_USERNAME=$(az acr credential show --name $(acrName) --query username -o tsv)
+                ACR_PASSWORD=$(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv)
+                echo "##vso[task.setvariable variable=ACR_USERNAME]$ACR_USERNAME"
+                echo "##vso[task.setvariable variable=ACR_PASSWORD]$ACR_PASSWORD"
           
-          - task: AzureAppServiceSettings@1
+          - task: AzureCLI@2
+            displayName: 'Eliminar Container Instance existente si existe'
             inputs:
               azureSubscription: $(azureSubscription)
-              appName: $(webAppNameBackendQA)
-              resourceGroupName: $(resourceGroupName)
-              appSettings: |
-                [
-                  {
-                    "name": "NODE_ENV",
-                    "value": "qa",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "PORT",
-                    "value": "8000",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "WEBSITE_NODE_DEFAULT_VERSION",
-                    "value": "20.11.0",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_TYPE",
-                    "value": "mysql",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_HOST",
-                    "value": "manufrias.mysql.database.azure.com",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_USER",
-                    "value": "A",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_PASSWORD",
-                    "value": "4286Pka1#",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_NAME",
-                    "value": "repuestera_db",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_PORT",
-                    "value": "3306",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "JWT_SECRET",
-                    "value": "qa_jwt_secret_key_2024",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "JWT_EXPIRES_IN",
-                    "value": "24h",
-                    "slotSetting": false
-                  }
-                ]
-            displayName: 'Configure QA Backend Settings'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                if az container show --resource-group $(resourceGroupName) --name $(containerNameBackendQA) &> /dev/null; then
+                  echo "Eliminando container instance existente..."
+                  az container delete --resource-group $(resourceGroupName) --name $(containerNameBackendQA) --yes
+                  sleep 10
+                fi
           
-          - task: AzureWebApp@1
+          - task: AzureCLI@2
+            displayName: 'Desplegar Backend Container a QA'
             inputs:
               azureSubscription: $(azureSubscription)
-              appType: 'webAppLinux'
-              appName: $(webAppNameBackendQA)
-              resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
-              runtimeStack: 'NODE|20-lts'
-              startUpCommand: 'npm start'
-            displayName: 'Deploy Backend to QA'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az container create \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameBackendQA) \
+                  --image $(backendImage) \
+                  --registry-login-server $(acrLoginServer) \
+                  --registry-username $(ACR_USERNAME) \
+                  --registry-password $(ACR_PASSWORD) \
+                  --dns-name-label $(dnsLabelBackendQA) \
+                  --ports 8000 \
+                  --environment-variables \
+                    NODE_ENV=qa \
+                    PORT=8000 \
+                    DB_TYPE=mysql \
+                    DB_HOST=manufrias.mysql.database.azure.com \
+                    DB_PORT=3306 \
+                    DB_NAME=repuestera_db \
+                    DB_USER=A \
+                    DB_PASSWORD=4286Pka1# \
+                    JWT_SECRET=qa_jwt_secret_key_2024 \
+                    JWT_EXPIRES_IN=24h \
+                  --cpu 1 \
+                  --memory 1.5 \
+                  --location $(location) \
+                  --output table
+                
+                # Obtener URL del backend
+                BACKEND_FQDN=$(az container show \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameBackendQA) \
+                  --query ipAddress.fqdn \
+                  -o tsv)
+                echo "##vso[task.setvariable variable=BACKEND_QA_URL]http://$BACKEND_FQDN:8000"
+                echo "Backend QA URL: http://$BACKEND_FQDN:8000"
+          
+          - task: AzureCLI@2
+            displayName: 'Verificar Backend QA disponible'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                BACKEND_FQDN=$(az container show \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameBackendQA) \
+                  --query ipAddress.fqdn \
+                  -o tsv)
+                
+                echo "Esperando a que el backend esté disponible..."
+                for i in {1..30}; do
+                  if curl -f -s "http://$BACKEND_FQDN:8000/api/health" > /dev/null 2>&1; then
+                    echo "✅ Backend QA disponible"
+                    exit 0
+                  fi
+                  echo "⏳ Esperando backend... intento $i/30"
+                  sleep 10
+                done
+                echo "⚠️ Backend no respondió en el tiempo esperado"
+                exit 1
 
   - deployment: DeployFrontendQA
-    displayName: 'Deploy Frontend to QA'
+    displayName: 'Deploy Frontend Container to QA'
     pool:
       vmImage: 'ubuntu-latest'
     environment: 'qa-frontend'
@@ -357,40 +345,77 @@ stages:
       runOnce:
         deploy:
           steps:
-          - download: current
-            artifact: frontend-qa-drop
-            displayName: 'Download Frontend QA Artifact'
-            
-          - task: AzureWebApp@1
+          - task: AzureCLI@2
+            displayName: 'Obtener credenciales ACR y URL del Backend'
             inputs:
               azureSubscription: $(azureSubscription)
-              appType: 'webAppLinux'
-              appName: $(webAppNameFrontendQA)
-              resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/frontend-qa-drop/frontend-qa.zip'
-              runtimeStack: 'NODE|20-lts'
-              startUpCommand: 'npx serve -s . -l 8080'
-            displayName: 'Deploy Frontend to QA'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                ACR_USERNAME=$(az acr credential show --name $(acrName) --query username -o tsv)
+                ACR_PASSWORD=$(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv)
+                echo "##vso[task.setvariable variable=ACR_USERNAME]$ACR_USERNAME"
+                echo "##vso[task.setvariable variable=ACR_PASSWORD]$ACR_PASSWORD"
+                
+                BACKEND_FQDN=$(az container show \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameBackendQA) \
+                  --query ipAddress.fqdn \
+                  -o tsv)
+                BACKEND_URL="http://$BACKEND_FQDN:8000"
+                echo "##vso[task.setvariable variable=BACKEND_QA_URL]$BACKEND_URL"
+                echo "Backend URL para frontend: $BACKEND_URL"
           
-          - task: AzureAppServiceSettings@1
+          - task: AzureCLI@2
+            displayName: 'Eliminar Container Instance existente si existe'
             inputs:
               azureSubscription: $(azureSubscription)
-              appName: $(webAppNameFrontendQA)
-              resourceGroupName: $(resourceGroupName)
-              appSettings: |
-                [
-                  {
-                    "name": "WEBSITE_NODE_DEFAULT_VERSION",
-                    "value": "20.11.0",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "PORT",
-                    "value": "8080",
-                    "slotSetting": false
-                  }
-                ]
-            displayName: 'Configure QA Frontend Settings'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                if az container show --resource-group $(resourceGroupName) --name $(containerNameFrontendQA) &> /dev/null; then
+                  echo "Eliminando container instance existente..."
+                  az container delete --resource-group $(resourceGroupName) --name $(containerNameFrontendQA) --yes
+                  sleep 10
+                fi
+          
+          - task: AzureCLI@2
+            displayName: 'Desplegar Frontend Container a QA'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                BACKEND_FQDN=$(az container show \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameBackendQA) \
+                  --query ipAddress.fqdn \
+                  -o tsv)
+                BACKEND_URL="http://$BACKEND_FQDN:8000"
+                
+                az container create \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameFrontendQA) \
+                  --image $(frontendImage) \
+                  --registry-login-server $(acrLoginServer) \
+                  --registry-username $(ACR_USERNAME) \
+                  --registry-password $(ACR_PASSWORD) \
+                  --dns-name-label $(dnsLabelFrontendQA) \
+                  --ports 80 \
+                  --environment-variables \
+                    REACT_APP_API_URL=$BACKEND_URL \
+                  --cpu 0.5 \
+                  --memory 1 \
+                  --location $(location) \
+                  --output table
+                
+                # Obtener URL del frontend
+                FRONTEND_FQDN=$(az container show \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameFrontendQA) \
+                  --query ipAddress.fqdn \
+                  -o tsv)
+                echo "Frontend QA URL: http://$FRONTEND_FQDN"
 
 # ============================================================================
 # STAGE E2E TESTS - Pruebas End-to-End con Cypress en QA
@@ -417,47 +442,117 @@ stages:
         npm install -D cypress@15.6.0
       displayName: 'Instalar dependencias y Cypress'
     
-    - script: |
-        # Verificar que el backend QA esté disponible
-        echo "Verificando disponibilidad del backend QA..."
-        for i in {1..30}; do
-          if curl -f -s "$(apiUrlQA)/health" > /dev/null 2>&1; then
-            echo "✅ Backend QA disponible"
-            break
-          fi
-          echo "⏳ Esperando backend... intento $i/30"
-          sleep 10
-        done
+    - task: AzureCLI@2
+      displayName: 'Obtener URLs de contenedores QA'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          BACKEND_FQDN=$(az container show \
+            --resource-group $(resourceGroupName) \
+            --name $(containerNameBackendQA) \
+            --query ipAddress.fqdn \
+            -o tsv)
+          FRONTEND_FQDN=$(az container show \
+            --resource-group $(resourceGroupName) \
+            --name $(containerNameFrontendQA) \
+            --query ipAddress.fqdn \
+            -o tsv)
+          
+          BACKEND_URL="http://$BACKEND_FQDN:8000"
+          FRONTEND_URL="http://$FRONTEND_FQDN"
+          
+          echo "##vso[task.setvariable variable=BACKEND_QA_URL]$BACKEND_URL"
+          echo "##vso[task.setvariable variable=FRONTEND_QA_URL]$FRONTEND_URL"
+          echo "Backend QA URL: $BACKEND_URL"
+          echo "Frontend QA URL: $FRONTEND_URL"
+    
+    - task: AzureCLI@2
       displayName: 'Verificar Backend QA disponible'
-      continueOnError: false
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          BACKEND_FQDN=$(az container show \
+            --resource-group $(resourceGroupName) \
+            --name $(containerNameBackendQA) \
+            --query ipAddress.fqdn \
+            -o tsv)
+          
+          echo "Verificando disponibilidad del backend QA..."
+          for i in {1..30}; do
+            if curl -f -s "http://$BACKEND_FQDN:8000/api/health" > /dev/null 2>&1; then
+              echo "✅ Backend QA disponible"
+              exit 0
+            fi
+            echo "⏳ Esperando backend... intento $i/30"
+            sleep 10
+          done
+          echo "⚠️ Backend no respondió en el tiempo esperado"
+          exit 1
     
-    - script: |
-        # Verificar que el frontend QA esté disponible
-        echo "Verificando disponibilidad del frontend QA..."
-        for i in {1..30}; do
-          if curl -f -s "https://$(webAppNameFrontendQA).azurewebsites.net" > /dev/null 2>&1; then
-            echo "✅ Frontend QA disponible"
-            break
-          fi
-          echo "⏳ Esperando frontend... intento $i/30"
-          sleep 10
-        done
+    - task: AzureCLI@2
       displayName: 'Verificar Frontend QA disponible'
-      continueOnError: false
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          FRONTEND_FQDN=$(az container show \
+            --resource-group $(resourceGroupName) \
+            --name $(containerNameFrontendQA) \
+            --query ipAddress.fqdn \
+            -o tsv)
+          
+          echo "Verificando disponibilidad del frontend QA..."
+          for i in {1..30}; do
+            if curl -f -s "http://$FRONTEND_FQDN" > /dev/null 2>&1; then
+              echo "✅ Frontend QA disponible"
+              exit 0
+            fi
+            echo "⏳ Esperando frontend... intento $i/30"
+            sleep 10
+          done
+          echo "⚠️ Frontend no respondió en el tiempo esperado"
+          exit 1
     
-    - script: |
-        # Configurar Cypress para QA
-        export CYPRESS_BASE_URL="https://$(webAppNameFrontendQA).azurewebsites.net"
-        export CYPRESS_API_URL="$(apiUrlQA)"
-        
-        # Ejecutar tests E2E
-        npx cypress run \
-          --spec "cypress/e2e/*.cy.js" \
-          --config baseUrl=$CYPRESS_BASE_URL \
-          --reporter junit \
-          --reporter-options "mochaFile=cypress/results/cypress-results-[hash].xml"
-      displayName: 'Ejecutar Cypress E2E Tests en QA'
-      continueOnError: false
+    - task: AzureCLI@2
+      displayName: 'Configurar y ejecutar Cypress E2E Tests en QA'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Instalar Cypress si no está instalado
+          if ! command -v cypress &> /dev/null; then
+            npm install -D cypress@15.6.0
+          fi
+          
+          BACKEND_FQDN=$(az container show \
+            --resource-group $(resourceGroupName) \
+            --name $(containerNameBackendQA) \
+            --query ipAddress.fqdn \
+            -o tsv)
+          FRONTEND_FQDN=$(az container show \
+            --resource-group $(resourceGroupName) \
+            --name $(containerNameFrontendQA) \
+            --query ipAddress.fqdn \
+            -o tsv)
+          
+          export CYPRESS_BASE_URL="http://$FRONTEND_FQDN"
+          export CYPRESS_API_URL="http://$BACKEND_FQDN:8000"
+          
+          echo "CYPRESS_BASE_URL: $CYPRESS_BASE_URL"
+          echo "CYPRESS_API_URL: $CYPRESS_API_URL"
+          
+          # Ejecutar tests E2E
+          npx cypress run \
+            --spec "cypress/e2e/*.cy.js" \
+            --config baseUrl=$CYPRESS_BASE_URL \
+            --reporter junit \
+            --reporter-options "mochaFile=cypress/results/cypress-results-[hash].xml"
       env:
         CYPRESS_RECORD_KEY: $(cypressRecordKey)
     
@@ -490,20 +585,22 @@ stages:
       continueOnError: true
 
 # ============================================================================
-# STAGE PRODUCTION - Despliegue con Aprobación Manual
+# STAGE PRODUCTION - Despliegue con Aprobación Manual (Contenedores)
 # ============================================================================
 - stage: DeployProduction
-  displayName: '🚀 Production Environment'
+  displayName: '🚀 Production Environment (Containers)'
   dependsOn: E2ETests
   condition: succeeded()
   
   variables:
     NODE_ENV: 'production'
-    API_URL: $(apiUrlProd)
+    acrLoginServer: '$(acrName).azurecr.io'
+    backendImage: '$(acrLoginServer)/repuestera-backend:prod-$(Build.BuildId)'
+    frontendImage: '$(acrLoginServer)/repuestera-frontend:prod-$(Build.BuildId)'
   
   jobs:
   - deployment: DeployBackendProd
-    displayName: '🔐 Deploy API to Production (Manual Approval Required)'
+    displayName: '🔐 Deploy Backend Container to Production (Manual Approval Required)'
     pool:
       vmImage: 'ubuntu-latest'
     environment: 'production-backend'
@@ -511,99 +608,99 @@ stages:
       runOnce:
         deploy:
           steps:
-          - download: current
-            artifact: backend-drop
-            displayName: 'Download Backend Artifact'
-            
-          - task: AzureWebApp@1
+          - task: AzureCLI@2
+            displayName: 'Obtener credenciales ACR'
             inputs:
               azureSubscription: $(azureSubscription)
-              appType: 'webAppLinux'
-              appName: $(webAppNameBackendProd)
-              resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
-              runtimeStack: 'NODE|20-lts'
-              startUpCommand: 'npm start'
-            displayName: 'Deploy Backend to Production'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                ACR_USERNAME=$(az acr credential show --name $(acrName) --query username -o tsv)
+                ACR_PASSWORD=$(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv)
+                echo "##vso[task.setvariable variable=ACR_USERNAME]$ACR_USERNAME"
+                echo "##vso[task.setvariable variable=ACR_PASSWORD]$ACR_PASSWORD"
           
-          - task: AzureAppServiceSettings@1
+          - task: AzureCLI@2
+            displayName: 'Eliminar Container Instance existente si existe'
             inputs:
               azureSubscription: $(azureSubscription)
-              appName: $(webAppNameBackendProd)
-              resourceGroupName: $(resourceGroupName)
-              appSettings: |
-                [
-                  {
-                    "name": "NODE_ENV",
-                    "value": "production",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "PORT",
-                    "value": "8000",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "WEBSITE_NODE_DEFAULT_VERSION",
-                    "value": "20.11.0",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_TYPE",
-                    "value": "mysql",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_HOST",
-                    "value": "manufrias.mysql.database.azure.com",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_USER",
-                    "value": "A",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_PASSWORD",
-                    "value": "4286Pka1#",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_NAME",
-                    "value": "repuestera_db",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "DB_PORT",
-                    "value": "3306",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "JWT_SECRET",
-                    "value": "prod_jwt_secret_key_secure_2024",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "JWT_EXPIRES_IN",
-                    "value": "24h",
-                    "slotSetting": false
-                  }
-                ]
-            displayName: 'Configure Production Backend Settings'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                if az container show --resource-group $(resourceGroupName) --name $(containerNameBackendProd) &> /dev/null; then
+                  echo "Eliminando container instance existente..."
+                  az container delete --resource-group $(resourceGroupName) --name $(containerNameBackendProd) --yes
+                  sleep 10
+                fi
           
-          - task: AzureWebApp@1
+          - task: AzureCLI@2
+            displayName: 'Desplegar Backend Container a Producción'
             inputs:
               azureSubscription: $(azureSubscription)
-              appType: 'webAppLinux'
-              appName: $(webAppNameBackendProd)
-              resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
-              runtimeStack: 'NODE|20-lts'
-              startUpCommand: 'npm start'
-            displayName: 'Deploy Backend to Production'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az container create \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameBackendProd) \
+                  --image $(backendImage) \
+                  --registry-login-server $(acrLoginServer) \
+                  --registry-username $(ACR_USERNAME) \
+                  --registry-password $(ACR_PASSWORD) \
+                  --dns-name-label $(dnsLabelBackendProd) \
+                  --ports 8000 \
+                  --environment-variables \
+                    NODE_ENV=production \
+                    PORT=8000 \
+                    DB_TYPE=mysql \
+                    DB_HOST=manufrias.mysql.database.azure.com \
+                    DB_PORT=3306 \
+                    DB_NAME=repuestera_db \
+                    DB_USER=A \
+                    DB_PASSWORD=4286Pka1# \
+                    JWT_SECRET=prod_jwt_secret_key_secure_2024 \
+                    JWT_EXPIRES_IN=24h \
+                  --cpu 1 \
+                  --memory 1.5 \
+                  --location $(location) \
+                  --output table
+                
+                # Obtener URL del backend
+                BACKEND_FQDN=$(az container show \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameBackendProd) \
+                  --query ipAddress.fqdn \
+                  -o tsv)
+                echo "##vso[task.setvariable variable=BACKEND_PROD_URL]http://$BACKEND_FQDN:8000"
+                echo "Backend Production URL: http://$BACKEND_FQDN:8000"
+          
+          - task: AzureCLI@2
+            displayName: 'Verificar Backend Production disponible'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                BACKEND_FQDN=$(az container show \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameBackendProd) \
+                  --query ipAddress.fqdn \
+                  -o tsv)
+                
+                echo "Esperando a que el backend esté disponible..."
+                for i in {1..30}; do
+                  if curl -f -s "http://$BACKEND_FQDN:8000/api/health" > /dev/null 2>&1; then
+                    echo "✅ Backend Production disponible"
+                    exit 0
+                  fi
+                  echo "⏳ Esperando backend... intento $i/30"
+                  sleep 10
+                done
+                echo "⚠️ Backend no respondió en el tiempo esperado"
+                exit 1
 
   - deployment: DeployFrontendProd
-    displayName: '🔐 Deploy Frontend to Production (Manual Approval Required)'
+    displayName: '🔐 Deploy Frontend Container to Production (Manual Approval Required)'
     pool:
       vmImage: 'ubuntu-latest'
     environment: 'production-frontend'
@@ -612,37 +709,74 @@ stages:
       runOnce:
         deploy:
           steps:
-          - download: current
-            artifact: frontend-prod-drop
-            displayName: 'Download Frontend Production Artifact'
-            
-          - task: AzureWebApp@1
+          - task: AzureCLI@2
+            displayName: 'Obtener credenciales ACR y URL del Backend'
             inputs:
               azureSubscription: $(azureSubscription)
-              appType: 'webAppLinux'
-              appName: $(webAppNameFrontendProd)
-              resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/frontend-prod-drop/frontend-prod.zip'
-              runtimeStack: 'NODE|20-lts'
-              startUpCommand: 'npx serve -s . -l 8080'
-            displayName: 'Deploy Frontend to Production'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                ACR_USERNAME=$(az acr credential show --name $(acrName) --query username -o tsv)
+                ACR_PASSWORD=$(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv)
+                echo "##vso[task.setvariable variable=ACR_USERNAME]$ACR_USERNAME"
+                echo "##vso[task.setvariable variable=ACR_PASSWORD]$ACR_PASSWORD"
+                
+                BACKEND_FQDN=$(az container show \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameBackendProd) \
+                  --query ipAddress.fqdn \
+                  -o tsv)
+                BACKEND_URL="http://$BACKEND_FQDN:8000"
+                echo "##vso[task.setvariable variable=BACKEND_PROD_URL]$BACKEND_URL"
+                echo "Backend URL para frontend: $BACKEND_URL"
           
-          - task: AzureAppServiceSettings@1
+          - task: AzureCLI@2
+            displayName: 'Eliminar Container Instance existente si existe'
             inputs:
               azureSubscription: $(azureSubscription)
-              appName: $(webAppNameFrontendProd)
-              resourceGroupName: $(resourceGroupName)
-              appSettings: |
-                [
-                  {
-                    "name": "WEBSITE_NODE_DEFAULT_VERSION",
-                    "value": "20.11.0",
-                    "slotSetting": false
-                  },
-                  {
-                    "name": "PORT",
-                    "value": "8080",
-                    "slotSetting": false
-                  }
-                ]
-            displayName: 'Configure Production Frontend Settings'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                if az container show --resource-group $(resourceGroupName) --name $(containerNameFrontendProd) &> /dev/null; then
+                  echo "Eliminando container instance existente..."
+                  az container delete --resource-group $(resourceGroupName) --name $(containerNameFrontendProd) --yes
+                  sleep 10
+                fi
+          
+          - task: AzureCLI@2
+            displayName: 'Desplegar Frontend Container a Producción'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                BACKEND_FQDN=$(az container show \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameBackendProd) \
+                  --query ipAddress.fqdn \
+                  -o tsv)
+                BACKEND_URL="http://$BACKEND_FQDN:8000"
+                
+                az container create \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameFrontendProd) \
+                  --image $(frontendImage) \
+                  --registry-login-server $(acrLoginServer) \
+                  --registry-username $(ACR_USERNAME) \
+                  --registry-password $(ACR_PASSWORD) \
+                  --dns-name-label $(dnsLabelFrontendProd) \
+                  --ports 80 \
+                  --environment-variables \
+                    REACT_APP_API_URL=$BACKEND_URL \
+                  --cpu 0.5 \
+                  --memory 1 \
+                  --location $(location) \
+                  --output table
+                
+                # Obtener URL del frontend
+                FRONTEND_FQDN=$(az container show \
+                  --resource-group $(resourceGroupName) \
+                  --name $(containerNameFrontendProd) \
+                  --query ipAddress.fqdn \
+                  -o tsv)
+                echo "Frontend Production URL: http://$FRONTEND_FQDN"
