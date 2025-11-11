@@ -4,9 +4,10 @@
 
 // Comando para limpiar usuarios de test antes de empezar
 Cypress.Commands.add('cleanupTestUsers', () => {
+  const apiBase = Cypress.env('apiUrl') || 'http://localhost:8000/api';
   cy.request({
     method: 'DELETE',
-    url: 'http://localhost:8000/api/test-cleanup/cleanup-test-users',
+    url: `${apiBase}/test-cleanup/cleanup-test-users`,
     failOnStatusCode: false // No fallar si el endpoint no existe
   }).then((response) => {
     if (response.status === 200) {
@@ -17,10 +18,11 @@ Cypress.Commands.add('cleanupTestUsers', () => {
 
 // Comando para registrar un nuevo usuario
 Cypress.Commands.add('registerUser', (userData) => {
+  const apiBase = Cypress.env('apiUrl') || 'http://localhost:8000/api';
   // Usar API directamente para asegurar el registro
   cy.request({
     method: 'POST',
-    url: 'http://localhost:8000/api/auth/register',
+    url: `${apiBase}/auth/register`,
     body: {
       nombre: userData.nombre,
       apellido: userData.apellido,
@@ -41,6 +43,7 @@ Cypress.Commands.add('registerUser', (userData) => {
 
 // Comando para hacer login
 Cypress.Commands.add('loginUser', (email, password) => {
+  const apiBase = Cypress.env('apiUrl') || 'http://localhost:8000/api';
   cy.visit('/login');
   
   cy.get('input[name="email"]').clear().type(email);
