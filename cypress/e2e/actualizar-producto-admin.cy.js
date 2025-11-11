@@ -69,7 +69,7 @@ describe('Flujo de actualización de producto como admin', () => {
       expect(interception.response.statusCode).to.be.oneOf([200, 201]);
       cy.log('Producto actualizado exitosamente');
     });
-
+    
     // Esperar a que el diálogo se cierre
     cy.get('[role="dialog"]').should('not.exist', { timeout: 15000 });
     
