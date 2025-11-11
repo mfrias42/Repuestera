@@ -1,0 +1,7 @@
+# Ignorar resultados, videos y screenshots de Cypress
+/results/*.xml
+/videos/*.mp4
+/screenshots/**/*.png
+
+# Mantener los directorios
+!.gitkeep

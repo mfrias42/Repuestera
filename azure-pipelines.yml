@@ -30,6 +30,9 @@ variables:
   sonarCloudOrganization: 'mfrias42'
   sonarCloudProjectKey: 'mfrias42_tp05'
   sonarCloudProjectName: 'tp05'
+  
+  # Variables Cypress (opcional para Cypress Dashboard)
+  # cypressRecordKey: $(CYPRESS_RECORD_KEY) # Configurar en Pipeline Variables si se desea
 
 stages:
 - stage: Build
@@ -390,11 +393,106 @@ stages:
             displayName: 'Configure QA Frontend Settings'
 
 # ============================================================================
+# STAGE E2E TESTS - Pruebas End-to-End con Cypress en QA
+# ============================================================================
+- stage: E2ETests
+  displayName: '🧪 E2E Tests (Cypress)'
+  dependsOn: DeployQA
+  condition: succeeded()
+  
+  jobs:
+  - job: CypressTests
+    displayName: 'Ejecutar Cypress E2E Tests'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: $(nodeVersion)
+      displayName: 'Instalar Node.js $(nodeVersion)'
+    
+    - script: |
+        npm install
+        npm install -D cypress@15.6.0
+      displayName: 'Instalar dependencias y Cypress'
+    
+    - script: |
+        # Verificar que el backend QA esté disponible
+        echo "Verificando disponibilidad del backend QA..."
+        for i in {1..30}; do
+          if curl -f -s "$(apiUrlQA)/health" > /dev/null 2>&1; then
+            echo "✅ Backend QA disponible"
+            break
+          fi
+          echo "⏳ Esperando backend... intento $i/30"
+          sleep 10
+        done
+      displayName: 'Verificar Backend QA disponible'
+      continueOnError: false
+    
+    - script: |
+        # Verificar que el frontend QA esté disponible
+        echo "Verificando disponibilidad del frontend QA..."
+        for i in {1..30}; do
+          if curl -f -s "https://$(webAppNameFrontendQA).azurewebsites.net" > /dev/null 2>&1; then
+            echo "✅ Frontend QA disponible"
+            break
+          fi
+          echo "⏳ Esperando frontend... intento $i/30"
+          sleep 10
+        done
+      displayName: 'Verificar Frontend QA disponible'
+      continueOnError: false
+    
+    - script: |
+        # Configurar Cypress para QA
+        export CYPRESS_BASE_URL="https://$(webAppNameFrontendQA).azurewebsites.net"
+        export CYPRESS_API_URL="$(apiUrlQA)"
+        
+        # Ejecutar tests E2E
+        npx cypress run \
+          --spec "cypress/e2e/*.cy.js" \
+          --config baseUrl=$CYPRESS_BASE_URL \
+          --reporter junit \
+          --reporter-options "mochaFile=cypress/results/cypress-results-[hash].xml"
+      displayName: 'Ejecutar Cypress E2E Tests en QA'
+      continueOnError: false
+      env:
+        CYPRESS_RECORD_KEY: $(cypressRecordKey)
+    
+    - task: PublishTestResults@2
+      condition: always()
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: 'cypress/results/*.xml'
+        testRunTitle: 'Cypress E2E Tests (5 tests)'
+        mergeTestResults: true
+        failTaskOnFailedTests: true
+      displayName: 'Publicar resultados de Cypress'
+    
+    - task: PublishBuildArtifacts@1
+      condition: always()
+      inputs:
+        PathtoPublish: 'cypress/screenshots'
+        ArtifactName: 'cypress-screenshots'
+        publishLocation: 'Container'
+      displayName: 'Publicar screenshots de errores'
+    
+    - task: PublishBuildArtifacts@1
+      condition: always()
+      inputs:
+        PathtoPublish: 'cypress/videos'
+        ArtifactName: 'cypress-videos'
+        publishLocation: 'Container'
+      displayName: 'Publicar videos de tests'
+
+# ============================================================================
 # STAGE PRODUCTION - Despliegue con Aprobación Manual
 # ============================================================================
 - stage: DeployProduction
   displayName: '🚀 Production Environment'
-  dependsOn: DeployQA
+  dependsOn: E2ETests
   condition: succeeded()
   
   variables:
