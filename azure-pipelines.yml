@@ -156,13 +156,11 @@ stages:
       displayName: 'Instalar Cypress'
 
     - script: |
-        # Iniciar MySQL
+        # Iniciar MySQL y configurar
         sudo systemctl start mysql
         sudo mysql -e "CREATE DATABASE IF NOT EXISTS repuestera_db;"
-        sudo mysql -e "CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'admin123';"
-        sudo mysql -e "GRANT ALL PRIVILEGES ON repuestera_db.* TO 'admin'@'localhost';"
-        sudo mysql -e "FLUSH PRIVILEGES;"
-        echo "MySQL configured"
+        echo "MySQL configured with database repuestera_db"
+        # Usar root sin password (default en Azure pipelines)
       displayName: 'Configurar base de datos MySQL'
 
     - script: |
@@ -186,8 +184,8 @@ stages:
       displayName: 'Iniciar servidor backend'
       env:
         DB_HOST: 'localhost'
-        DB_USER: 'admin'
-        DB_PASSWORD: 'admin123'
+        DB_USER: 'root'
+        DB_PASSWORD: ''
         DB_NAME: 'repuestera_db'
         PORT: '8000'
 

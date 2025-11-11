@@ -65,20 +65,13 @@ const handleValidationErrors = (req, res, next) => {
 async function getConnection() {
   const mysql = require('mysql2/promise');
   const config = {
-    host: process.env.DB_HOST || 'manufrias.mysql.database.azure.com',
+    host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER || 'A',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'repuestera_db',
     ssl: { rejectUnauthorized: false }
   };
-  
-  // Solo agregar password si existe y no está vacío
-  if (process.env.DB_PASSWORD && process.env.DB_PASSWORD.trim() !== '') {
-    config.password = process.env.DB_PASSWORD;
-  } else if (!process.env.DB_HOST || process.env.DB_HOST === 'manufrias.mysql.database.azure.com') {
-    // Usar password de Azure solo si estamos conectando a Azure
-    config.password = '4286Pka1#';
-  }
   
   return await mysql.createConnection(config);
 }
