@@ -7,6 +7,7 @@ const {
   verifyUser, 
   verifyAdmin 
 } = require('../middleware/auth');
+const { executeQuery } = require('../config/database-mysql');
 
 const router = express.Router();
 
@@ -61,35 +62,18 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-// Función para conectar a la base de datos
-async function getConnection() {
-  const mysql = require('mysql2/promise');
-  return await mysql.createConnection({
-    host: process.env.DB_HOST || 'manufrias.mysql.database.azure.com',
-    port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER || 'A',
-    password: process.env.DB_PASSWORD || '4286Pka1#',
-    database: process.env.DB_NAME || 'repuestera_db',
-    ssl: { rejectUnauthorized: false }
-  });
-}
-
 // POST /api/auth/register - Registro de usuarios
 router.post('/register', registerValidation, handleValidationErrors, async (req, res) => {
-  let connection;
   try {
     const { nombre, apellido, email, password, telefono, direccion } = req.body;
 
-    connection = await getConnection();
-
     // Verificar si el usuario ya existe
-    const [existingUsers] = await connection.execute(
+    const existingUsers = await executeQuery(
       'SELECT id FROM usuarios WHERE email = ?',
       [email]
     );
 
     if (existingUsers.length > 0) {
-      await connection.end();
       return res.status(400).json({
         error: 'Usuario ya existe',
         message: 'Ya existe un usuario con este email'
@@ -101,12 +85,10 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Crear usuario
-    const [result] = await connection.execute(
+    const result = await executeQuery(
       'INSERT INTO usuarios (nombre, apellido, email, password, telefono, direccion) VALUES (?, ?, ?, ?, ?, ?)',
       [nombre, apellido, email, hashedPassword, telefono || null, direccion || null]
     );
-
-    await connection.end();
 
     // Crear objeto usuario para el token
     const user = {
@@ -131,7 +113,6 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
     });
 
   } catch (error) {
-    if (connection) await connection.end();
     console.error('❌ Error en registro:', error);
     res.status(500).json({
       error: 'Error interno del servidor',
@@ -142,19 +123,14 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
 
 // POST /api/auth/login - Login de usuarios
 router.post('/login', loginValidation, handleValidationErrors, async (req, res) => {
-  let connection;
   try {
     const { email, password } = req.body;
 
-    connection = await getConnection();
-
     // Buscar usuario
-    const [users] = await connection.execute(
+    const users = await executeQuery(
       'SELECT * FROM usuarios WHERE email = ? AND activo = 1',
       [email]
     );
-
-    await connection.end();
 
     if (users.length === 0) {
       return res.status(401).json({
@@ -197,7 +173,6 @@ router.post('/login', loginValidation, handleValidationErrors, async (req, res) 
     });
 
   } catch (error) {
-    if (connection) await connection.end();
     console.error('❌ Error en login:', error);
     res.status(500).json({
       error: 'Error interno del servidor',
@@ -208,20 +183,15 @@ router.post('/login', loginValidation, handleValidationErrors, async (req, res) 
 
 // POST /api/auth/admin/login - Login de administradores
 router.post('/admin/login', loginValidation, handleValidationErrors, async (req, res) => {
-  let connection;
   try {
     const { email, password } = req.body;
     console.log(`🔐 Intento de login admin: ${email}`);
 
-    connection = await getConnection();
-
     // Buscar administrador
-    const [admins] = await connection.execute(
+    const admins = await executeQuery(
       'SELECT * FROM administradores WHERE email = ? AND activo = 1',
       [email]
     );
-
-    await connection.end();
     
     if (admins.length === 0) {
       return res.status(401).json({
@@ -264,7 +234,6 @@ router.post('/admin/login', loginValidation, handleValidationErrors, async (req,
     });
 
   } catch (error) {
-    if (connection) await connection.end();
     console.error('❌ Error en login admin:', error);
     res.status(500).json({
       error: 'Error interno del servidor',
@@ -290,19 +259,14 @@ router.post('/logout', verifyToken, async (req, res) => {
 
 // GET /api/auth/me - Obtener información del usuario actual
 router.get('/me', verifyToken, async (req, res) => {
-  let connection;
   try {
     const { id, type } = req.user;
     
-    connection = await getConnection();
-    
     if (type === 'admin') {
-      const [admins] = await connection.execute(
+      const admins = await executeQuery(
         'SELECT id, nombre, apellido, email, rol, activo FROM administradores WHERE id = ?',
         [id]
       );
-      
-      await connection.end();
       
       if (admins.length === 0) {
         return res.status(404).json({
@@ -316,12 +280,10 @@ router.get('/me', verifyToken, async (req, res) => {
         type: 'admin'
       });
     } else {
-      const [users] = await connection.execute(
+      const users = await executeQuery(
         'SELECT id, nombre, apellido, email, telefono, direccion, activo FROM usuarios WHERE id = ?',
         [id]
       );
-      
-      await connection.end();
       
       if (users.length === 0) {
         return res.status(404).json({
@@ -336,7 +298,6 @@ router.get('/me', verifyToken, async (req, res) => {
       });
     }
   } catch (error) {
-    if (connection) await connection.end();
     console.error('❌ Error obteniendo información del usuario:', error);
     res.status(500).json({
       error: 'Error interno del servidor',
