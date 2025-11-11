@@ -39,11 +39,13 @@ describe('Flujo de creación de producto como admin', () => {
     // Enviar el formulario
     cy.contains('button', 'Guardar').click();
 
-    // Esperar a que se cierre el diálogo o se procese la solicitud
-    cy.wait(3000);
+    // Esperar a que se cierre el diálogo (desaparece el título "Nuevo Producto")
+    cy.contains('Nuevo Producto').should('not.exist', { timeout: 10000 });
     
-    // Verificar que el producto aparece en la tabla o que no hay error visible
-    // (Si hay error, el test fallará mostrando el mensaje de error)
-    cy.contains('Producto Cypress Test', { timeout: 5000 });
+    // Esperar un poco más para que la tabla se actualice
+    cy.wait(2000);
+    
+    // Verificar que el producto aparece en la tabla
+    cy.contains('Producto Cypress Test', { timeout: 5000 }).should('be.visible');
   });
 });
