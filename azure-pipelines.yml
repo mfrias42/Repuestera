@@ -123,6 +123,143 @@ stages:
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del backend'
 
+  - job: CypressE2E
+    displayName: 'Tests E2E con Cypress'
+    dependsOn: BuildBackend
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: $(nodeVersion)
+      displayName: 'Instalar Node.js $(nodeVersion)'
+
+    - script: |
+        # Instalar dependencias del backend
+        cd backend
+        npm install
+        echo "Backend dependencies installed"
+      displayName: 'Instalar dependencias del backend'
+
+    - script: |
+        # Instalar dependencias del frontend
+        cd frontend
+        npm install
+        echo "Frontend dependencies installed"
+      displayName: 'Instalar dependencias del frontend'
+
+    - script: |
+        # Instalar Cypress y dependencias
+        npm install --save-dev cypress
+        echo "Cypress installed"
+      displayName: 'Instalar Cypress'
+
+    - script: |
+        # Iniciar MySQL
+        sudo systemctl start mysql
+        sudo mysql -e "CREATE DATABASE IF NOT EXISTS repuestera_db;"
+        sudo mysql -e "CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'admin123';"
+        sudo mysql -e "GRANT ALL PRIVILEGES ON repuestera_db.* TO 'admin'@'localhost';"
+        sudo mysql -e "FLUSH PRIVILEGES;"
+        echo "MySQL configured"
+      displayName: 'Configurar base de datos MySQL'
+
+    - script: |
+        # Iniciar backend en background
+        cd backend
+        npm start &
+        BACKEND_PID=$!
+        echo "Backend started with PID: $BACKEND_PID"
+        echo "##vso[task.setvariable variable=BACKEND_PID]$BACKEND_PID"
+        
+        # Esperar a que el backend esté listo
+        echo "Waiting for backend to be ready..."
+        for i in {1..30}; do
+          if curl -s http://localhost:8000/api/health > /dev/null 2>&1 || curl -s http://localhost:8000/ > /dev/null 2>&1; then
+            echo "Backend is ready!"
+            break
+          fi
+          echo "Attempt $i: Backend not ready yet, waiting..."
+          sleep 2
+        done
+      displayName: 'Iniciar servidor backend'
+      env:
+        DB_HOST: 'localhost'
+        DB_USER: 'admin'
+        DB_PASSWORD: 'admin123'
+        DB_NAME: 'repuestera_db'
+        PORT: '8000'
+
+    - script: |
+        # Iniciar frontend en background
+        cd frontend
+        REACT_APP_API_URL=http://localhost:8000/api npm start &
+        FRONTEND_PID=$!
+        echo "Frontend started with PID: $FRONTEND_PID"
+        echo "##vso[task.setvariable variable=FRONTEND_PID]$FRONTEND_PID"
+        
+        # Esperar a que el frontend esté listo
+        echo "Waiting for frontend to be ready..."
+        for i in {1..60}; do
+          if curl -s http://localhost:3000 > /dev/null 2>&1; then
+            echo "Frontend is ready!"
+            break
+          fi
+          echo "Attempt $i: Frontend not ready yet, waiting..."
+          sleep 2
+        done
+      displayName: 'Iniciar servidor frontend'
+      env:
+        CI: 'false'
+        REACT_APP_API_URL: 'http://localhost:8000/api'
+
+    - script: |
+        # Ejecutar tests de Cypress en modo headless
+        npx cypress run
+      displayName: 'Ejecutar tests E2E con Cypress'
+      continueOnError: false
+      env:
+        CYPRESS_baseUrl: 'http://localhost:3000'
+
+    - script: |
+        # Detener servidores
+        if [ ! -z "$BACKEND_PID" ]; then
+          kill $BACKEND_PID || true
+        fi
+        if [ ! -z "$FRONTEND_PID" ]; then
+          kill $FRONTEND_PID || true
+        fi
+        echo "Servers stopped"
+      displayName: 'Detener servidores'
+      condition: always()
+
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**/cypress/results/*.xml'
+        testRunTitle: 'Cypress E2E Tests'
+        mergeTestResults: true
+        failTaskOnFailedTests: true
+      displayName: 'Publicar resultados de Cypress'
+      condition: always()
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: 'cypress/screenshots'
+        ArtifactName: 'cypress-screenshots'
+        publishLocation: 'Container'
+      displayName: 'Publicar screenshots de Cypress'
+      condition: failed()
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: 'cypress/videos'
+        ArtifactName: 'cypress-videos'
+        publishLocation: 'Container'
+      displayName: 'Publicar videos de Cypress'
+      condition: always()
+
   - job: BuildFrontendQA
     displayName: 'Construir Frontend para QA'
     pool:
