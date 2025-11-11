@@ -19,17 +19,17 @@ variables:
   acrName: 'repusteraacr'
   
   # Variables QA - App Services (contenedores)
-  webAppNameBackendQA: 'back-qa-fufuc2ahgheph6ak'
-  webAppNameFrontendQA: 'front-qa-fed6b2g5dfadeqdw'
+  webAppNameBackendQA: 'back-qa'
+  webAppNameFrontendQA: 'front-qa'
   backendUrlQA: 'https://back-qa-fufuc2ahgheph6ak.chilecentral-01.azurewebsites.net'
   frontendUrlQA: 'https://front-qa-fed6b2g5dfadeqdw.chilecentral-01.azurewebsites.net'
   
   # Variables Producción - App Services (contenedores)
-  webAppNameBackendProd: 'back-prod-eqdtfvgyb7ftfmdy'
-  webAppNameFrontendProd: 'front-prod-bdh2f7dya8c3ewbf'
+  webAppNameBackendProd: 'back-prod'
+  webAppNameFrontendProd: 'front-prod'
   backendUrlProd: 'https://back-prod-eqdtfvgyb7ftfmdy.chilecentral-01.azurewebsites.net'
   frontendUrlProd: 'https://front-prod-bdh2f7dya8c3ewbf.chilecentral-01.azurewebsites.net'
-  
+
   # Variables SonarCloud
   sonarCloudServiceConnection: 'SonarCloud'
   sonarCloudOrganization: 'mfrias42'
@@ -307,6 +307,23 @@ stages:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
+                echo "=== Configuración del App Service Backend QA ==="
+                echo "Imagen a usar: $(backendImage)"
+                echo "ACR Login Server: $(acrLoginServer)"
+                
+                # Verificar que la imagen existe en ACR
+                echo "Verificando que la imagen existe en ACR..."
+                IMAGE_EXISTS=$(az acr repository show-tags --name $(acrName) --repository repuestera-backend --query "[?contains(name, 'qa-$(Build.BuildId)')].name" -o tsv 2>/dev/null || echo "")
+                
+                if [ -z "$IMAGE_EXISTS" ]; then
+                  echo "⚠️  La imagen $(backendImage) no se encontró en ACR"
+                  echo "Buscando imágenes disponibles..."
+                  az acr repository show-tags --name $(acrName) --repository repuestera-backend --output table 2>/dev/null || echo "No se pudieron listar imágenes"
+                  echo "Usando la imagen especificada de todas formas..."
+                else
+                  echo "✅ Imagen encontrada en ACR"
+                fi
+                
                 # Configurar el App Service para usar la imagen del contenedor
                 echo "Configurando contenedor Docker..."
                 az webapp config container set \
@@ -315,14 +332,47 @@ stages:
                   --docker-custom-image-name $(backendImage) \
                   --docker-registry-server-url https://$(acrLoginServer) \
                   --docker-registry-server-user $(ACR_USERNAME) \
-                  --docker-registry-server-password $(ACR_PASSWORD)
+                  --docker-registry-server-password $(ACR_PASSWORD) \
+                  --output table
+                
+                if [ $? -ne 0 ]; then
+                  echo "❌ Error al configurar el contenedor"
+                  exit 1
+                fi
                 
                 # Configurar linuxFxVersion para Docker (importante para App Services)
                 echo "Configurando linuxFxVersion para Docker..."
                 az webapp config set \
                   --name $(webAppNameBackendQA) \
                   --resource-group $(APP_SERVICE_RG) \
-                  --linux-fx-version "DOCKER|$(backendImage)"
+                  --linux-fx-version "DOCKER|$(backendImage)" \
+                  --output table
+                
+                if [ $? -ne 0 ]; then
+                  echo "❌ Error al configurar linuxFxVersion"
+                  exit 1
+                fi
+                
+                # Esperar un momento para que la configuración se aplique
+                sleep 5
+                
+                # Verificar configuración ANTES de continuar
+                echo "=== Verificando configuración aplicada ==="
+                CONTAINER_CONFIG=$(az webapp config container show --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG) -o json 2>/dev/null || echo "{}")
+                CONTAINER_IMAGE=$(echo "$CONTAINER_CONFIG" | jq -r '.linuxFxVersion // .dockerCfgImage // "No configurado"' 2>/dev/null || echo "No se pudo obtener")
+                
+                LINUX_FX=$(az webapp config show --name $(webAppNameBackendQA) --resource-group $(APP_SERVICE_RG) --query linuxFxVersion -o tsv 2>/dev/null || echo "")
+                
+                echo "Imagen configurada en container: $CONTAINER_IMAGE"
+                echo "linuxFxVersion: ${LINUX_FX:-'No configurado'}"
+                
+                if [[ "$LINUX_FX" != *"$(backendImage)"* ]] && [[ "$CONTAINER_IMAGE" != *"$(backendImage)"* ]]; then
+                  echo "⚠️  ADVERTENCIA: La imagen configurada no coincide con la esperada"
+                  echo "Esperada: $(backendImage)"
+                  echo "Configurada: $LINUX_FX o $CONTAINER_IMAGE"
+                else
+                  echo "✅ Configuración verificada correctamente"
+                fi
                 
                 # Configurar variables de entorno
                 echo "Configurando variables de entorno..."
@@ -541,15 +591,15 @@ stages:
         scriptLocation: 'inlineScript'
         inlineScript: |
           echo "Verificando disponibilidad del backend en $(backendUrlQA)/api/health"
-          for i in {1..30}; do
+        for i in {1..30}; do
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$(backendUrlQA)/api/health" || echo "000")
             if [ "$HTTP_CODE" == "200" ]; then
               echo "✅ Backend QA disponible (HTTP $HTTP_CODE)"
               exit 0
             fi
             echo "⏳ Esperando backend... intento $i/30 (HTTP $HTTP_CODE)"
-            sleep 10
-          done
+          sleep 10
+        done
           echo "⚠️ Backend no respondió en el tiempo esperado"
           exit 1
     
@@ -590,13 +640,13 @@ stages:
           
           echo "CYPRESS_BASE_URL: $CYPRESS_BASE_URL"
           echo "CYPRESS_API_URL: $CYPRESS_API_URL"
-          
-          # Ejecutar tests E2E
-          npx cypress run \
-            --spec "cypress/e2e/*.cy.js" \
-            --config baseUrl=$CYPRESS_BASE_URL \
-            --reporter junit \
-            --reporter-options "mochaFile=cypress/results/cypress-results-[hash].xml"
+        
+        # Ejecutar tests E2E
+        npx cypress run \
+          --spec "cypress/e2e/*.cy.js" \
+          --config baseUrl=$CYPRESS_BASE_URL \
+          --reporter junit \
+          --reporter-options "mochaFile=cypress/results/cypress-results-[hash].xml"
       env:
         CYPRESS_RECORD_KEY: $(cypressRecordKey)
     

@@ -47,6 +47,8 @@ app.use(limiter);
 
 // CORS - Configuración mejorada
 const allowedOrigins = [
+  'http://localhost',
+  'http://localhost:80',
   'http://localhost:3000',
   'http://localhost:3001',
   // URLs de Azure App Service - Producción
