@@ -28,8 +28,6 @@ module.exports = {
     '!**/auth-fixed.js',      // Archivo auxiliar
     '!**/debug.js',           // Archivo de debug
     '!**/test-simple.js',     // Archivo de prueba
-    '!**/routes/auth.js',     // Excluir auth.js (excluido en SonarCloud, cubierto por E2E)
-    '!**/routes/test-cleanup.js', // Excluir test-cleanup.js (utilidad de testing)
     '!ecosystem.config.js'    // Config de PM2
   ],
   
