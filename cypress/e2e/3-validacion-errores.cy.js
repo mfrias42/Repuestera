@@ -9,8 +9,6 @@ describe('Test E2E - Validación de Errores y Casos Límite', () => {
   };
 
   before(() => {
-    // Limpiar usuarios de test antes de empezar
-    cy.cleanupTestUsers();
     // Crear el usuario UNA VEZ para todos los tests que lo necesiten
     cy.registerUser(testUser);
   });
