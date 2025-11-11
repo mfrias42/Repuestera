@@ -64,14 +64,16 @@ const handleValidationErrors = (req, res, next) => {
 // Función para conectar a la base de datos
 async function getConnection() {
   const mysql = require('mysql2/promise');
-  return await mysql.createConnection({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+  const config = {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'repuestera_db',
     ssl: { rejectUnauthorized: false }
-  });
+  };
+  
+  return await mysql.createConnection(config);
 }
 
 // POST /api/auth/register - Registro de usuarios
