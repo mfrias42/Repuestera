@@ -123,18 +123,56 @@ const ProductManagement = () => {
     setLoading(true);
 
     try {
+      // Mapear campos del formulario a los que espera el backend
+      const productData = {
+        nombre: formData.nombre,
+        descripcion: formData.descripcion || null,
+        precio: parseFloat(formData.precio),
+        stock: parseInt(formData.stock),
+        codigo_producto: formData.codigo || null,
+        categoria_id: formData.categoria ? parseInt(formData.categoria) : null,
+        año_desde: formData.año_desde ? parseInt(formData.año_desde) : null,
+        año_hasta: formData.año_hasta ? parseInt(formData.año_hasta) : null,
+        imagen: formData.imagen
+      };
+
+      console.log('📤 Enviando datos del producto:', productData);
+
       if (editingProduct) {
-        await productService.updateProduct(editingProduct.id, formData);
+        await productService.updateProduct(editingProduct.id, productData);
         setSuccess('Producto actualizado exitosamente');
       } else {
-        await productService.createProduct(formData);
+        await productService.createProduct(productData);
         setSuccess('Producto creado exitosamente');
       }
       
       await loadProducts();
       handleCloseDialog();
     } catch (error) {
-      setError(error.response?.data?.message || 'Error al guardar producto');
+      console.error('❌ Error completo:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error data:', error.response?.data);
+      
+      // Extraer mensaje de error más detallado
+      let errorMessage = 'Error al guardar producto';
+      
+      if (error.response) {
+        const errorData = error.response.data;
+        if (errorData?.message) {
+          errorMessage = errorData.message;
+        } else if (errorData?.error) {
+          errorMessage = `${errorData.error}: ${errorData.message || 'Error desconocido'}`;
+        } else if (Array.isArray(errorData)) {
+          // Errores de validación
+          errorMessage = errorData.map(err => err.msg || err.message).join(', ');
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -147,7 +185,19 @@ const ProductManagement = () => {
         setSuccess('Producto eliminado exitosamente');
         await loadProducts();
       } catch (error) {
-        setError('Error al eliminar producto');
+        console.error('❌ Error eliminando producto:', error);
+        console.error('❌ Error response:', error.response);
+        
+        let errorMessage = 'Error al eliminar producto';
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response?.data?.error) {
+          errorMessage = `${error.response.data.error}: ${error.response.data.message || 'Error desconocido'}`;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        setError(errorMessage);
       }
     }
   };

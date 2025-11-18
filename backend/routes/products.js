@@ -203,10 +203,17 @@ router.post('/',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     try {
+      console.log('📦 POST /api/products - Crear producto');
+      console.log('📦 Body recibido:', req.body);
+      console.log('📦 File recibido:', req.file);
+      console.log('📦 Admin ID:', req.currentAdmin?.id);
+      console.log('📦 Admin Rol:', req.currentAdmin?.rol);
+
       // Verificar que la categoría existe si se proporciona
       if (req.body.categoria_id) {
         const category = await Category.findById(req.body.categoria_id);
         if (!category) {
+          console.error('❌ Categoría no encontrada:', req.body.categoria_id);
           return res.status(400).json({
             error: 'Categoría inválida',
             message: 'La categoría especificada no existe'
@@ -218,6 +225,7 @@ router.post('/',
       if (req.body.codigo_producto) {
         const existingProduct = await Product.findByCode(req.body.codigo_producto);
         if (existingProduct) {
+          console.error('❌ Código de producto duplicado:', req.body.codigo_producto);
           return res.status(409).json({
             error: 'Código duplicado',
             message: 'Ya existe un producto con este código'
@@ -227,6 +235,7 @@ router.post('/',
 
       // Validar años
       if (req.body.año_desde && req.body.año_hasta && req.body.año_desde > req.body.año_hasta) {
+        console.error('❌ Años inválidos:', req.body.año_desde, '>', req.body.año_hasta);
         return res.status(400).json({
           error: 'Años inválidos',
           message: 'El año desde no puede ser mayor al año hasta'
@@ -237,9 +246,12 @@ router.post('/',
       const productData = { ...req.body };
       if (req.file) {
         productData.imagen = req.file.url;
+        console.log('📦 Imagen subida:', req.file.url);
       }
 
+      console.log('📦 Datos del producto a crear:', productData);
       const product = await Product.create(productData);
+      console.log('✅ Producto creado exitosamente:', product.id);
 
       res.status(201).json({
         message: 'Producto creado exitosamente',
@@ -247,7 +259,14 @@ router.post('/',
       });
 
     } catch (error) {
-      console.error('Error creando producto:', error);
+      console.error('❌ Error detallado creando producto:', {
+        message: error.message,
+        code: error.code,
+        errno: error.errno,
+        sqlState: error.sqlState,
+        stack: error.stack,
+        body: req.body
+      });
       
       if (error.code === 'ER_DUP_ENTRY') {
         return res.status(409).json({
@@ -256,9 +275,17 @@ router.post('/',
         });
       }
 
+      if (error.code === 'ER_NO_SUCH_TABLE') {
+        return res.status(500).json({
+          error: 'Base de datos no inicializada',
+          message: 'Las tablas de la base de datos no existen. Por favor, ejecute el script de inicialización.'
+        });
+      }
+
       res.status(500).json({
         error: 'Error interno del servidor',
-        message: 'No se pudo crear el producto'
+        message: error.message || 'No se pudo crear el producto',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   })
@@ -277,6 +304,13 @@ router.put('/:id',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     try {
+      console.log('✏️ PUT /api/products/:id - Actualizar producto');
+      console.log('✏️ Product ID:', req.params.id);
+      console.log('✏️ Body recibido:', req.body);
+      console.log('✏️ File recibido:', req.file);
+      console.log('✏️ Admin ID:', req.currentAdmin?.id);
+      console.log('✏️ Admin Rol:', req.currentAdmin?.rol);
+
       const product = await Product.findById(req.params.id);
       
       if (!product) {
@@ -331,7 +365,9 @@ router.put('/:id',
         updateData.imagen = req.file.url;
       }
 
+      console.log('✏️ Datos del producto a actualizar:', updateData);
       const updatedProduct = await product.update(updateData);
+      console.log('✅ Producto actualizado exitosamente:', updatedProduct.id);
 
       res.json({
         message: 'Producto actualizado exitosamente',
@@ -339,7 +375,15 @@ router.put('/:id',
       });
 
     } catch (error) {
-      console.error('Error actualizando producto:', error);
+      console.error('❌ Error detallado actualizando producto:', {
+        message: error.message,
+        code: error.code,
+        errno: error.errno,
+        sqlState: error.sqlState,
+        stack: error.stack,
+        body: req.body,
+        productId: req.params.id
+      });
       
       if (error.code === 'ER_DUP_ENTRY') {
         return res.status(409).json({
@@ -348,9 +392,17 @@ router.put('/:id',
         });
       }
 
+      if (error.code === 'ER_NO_SUCH_TABLE') {
+        return res.status(500).json({
+          error: 'Base de datos no inicializada',
+          message: 'Las tablas de la base de datos no existen. Por favor, ejecute el script de inicialización.'
+        });
+      }
+
       res.status(500).json({
         error: 'Error interno del servidor',
-        message: 'No se pudo actualizar el producto'
+        message: error.message || 'No se pudo actualizar el producto',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   })
@@ -410,9 +462,15 @@ router.delete('/:id',
   handleValidationErrors,
   async (req, res) => {
     try {
+      console.log('🗑️ DELETE /api/products/:id - Eliminar producto');
+      console.log('🗑️ Product ID:', req.params.id);
+      console.log('🗑️ Admin ID:', req.currentAdmin?.id);
+      console.log('🗑️ Admin Rol:', req.currentAdmin?.rol);
+
       const product = await Product.findById(req.params.id);
       
       if (!product) {
+        console.error('❌ Producto no encontrado:', req.params.id);
         return res.status(404).json({
           error: 'Producto no encontrado',
           message: 'El producto solicitado no existe'
@@ -420,6 +478,7 @@ router.delete('/:id',
       }
 
       await product.deactivate();
+      console.log('✅ Producto eliminado exitosamente:', product.id);
 
       res.json({
         message: 'Producto eliminado exitosamente',
@@ -427,10 +486,26 @@ router.delete('/:id',
       });
 
     } catch (error) {
-      console.error('Error eliminando producto:', error);
+      console.error('❌ Error detallado eliminando producto:', {
+        message: error.message,
+        code: error.code,
+        errno: error.errno,
+        sqlState: error.sqlState,
+        stack: error.stack,
+        productId: req.params.id
+      });
+      
+      if (error.code === 'ER_NO_SUCH_TABLE') {
+        return res.status(500).json({
+          error: 'Base de datos no inicializada',
+          message: 'Las tablas de la base de datos no existen. Por favor, ejecute el script de inicialización.'
+        });
+      }
+
       res.status(500).json({
         error: 'Error interno del servidor',
-        message: 'No se pudo eliminar el producto'
+        message: error.message || 'No se pudo eliminar el producto',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }
