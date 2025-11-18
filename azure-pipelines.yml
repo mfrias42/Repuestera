@@ -163,17 +163,6 @@ stages:
           - download: current
             artifact: backend-drop
             displayName: 'Download Backend Artifact'
-            
-          - task: AzureWebApp@1
-            inputs:
-              azureSubscription: $(azureSubscription)
-              appType: 'webAppLinux'
-              appName: $(webAppNameBackendQA)
-              resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
-              runtimeStack: 'NODE|20-lts'
-              startUpCommand: 'npm start'
-            displayName: 'Deploy Backend to QA'
           
           - task: AzureAppServiceSettings@1
             inputs:
@@ -239,7 +228,7 @@ stages:
                   }
                 ]
             displayName: 'Configure QA Backend Settings'
-          
+            
           - task: AzureWebApp@1
             inputs:
               azureSubscription: $(azureSubscription)
