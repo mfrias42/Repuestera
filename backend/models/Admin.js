@@ -8,7 +8,7 @@ class Admin {
     this.apellido = data.apellido;
     this.email = data.email;
     this.password = data.password;
-    this.rol = data.rol;
+    this.rol = data.rol || 'admin'; // Valor por defecto si es null/undefined
     this.fecha_registro = data.fecha_registro;
     this.ultimo_acceso = data.ultimo_acceso;
     this.activo = data.activo;
@@ -160,6 +160,9 @@ class Admin {
 
   // Verificar si puede realizar acción administrativa
   canPerformAction(action) {
+    // Asegurar que el rol tenga un valor por defecto
+    const rol = this.rol || 'admin';
+    
     const permissions = {
       'admin': ['read_products', 'create_products', 'update_products', 'delete_products', 'read_users'],
       'super_admin': ['read_products', 'create_products', 'update_products', 'delete_products', 
@@ -167,7 +170,7 @@ class Admin {
                      'read_admins', 'create_admins', 'update_admins', 'delete_admins']
     };
     
-    return permissions[this.rol]?.includes(action) || false;
+    return permissions[rol]?.includes(action) || false;
   }
 
   // Contar total de administradores

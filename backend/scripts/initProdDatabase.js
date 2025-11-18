@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
+require('dotenv').config();
 
 async function initProdDatabase() {
   let connection;
@@ -7,20 +8,99 @@ async function initProdDatabase() {
   try {
     // Configuración para Producción en Azure MySQL
     connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'repuestera-mfrias-server.mysql.database.azure.com',
-      port: process.env.DB_PORT || 3306,
-      user: process.env.DB_USER || 'prod_admin',
-      password: process.env.DB_PASSWORD || 'Prod_SecurePass2024!',
-      database: process.env.DB_NAME || 'repuestera_prod_db',
-    ssl: {
-      rejectUnauthorized: false
-    },
-    connectTimeout: 60000
+      host: process.env.DB_HOST || 'manufrias-prod.mysql.database.azure.com',
+      port: parseInt(process.env.DB_PORT) || 3306,
+      user: process.env.DB_USER || 'A',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'repuestera_db',
+      ssl: {
+        rejectUnauthorized: false
+      },
+      connectTimeout: 60000
     });
 
     console.log('🔗 Conectado a Azure MySQL Database Producción');
+    console.log(`📊 Base de datos: ${process.env.DB_NAME || 'repuestera_db'}`);
 
-    // Verificar si ya existe el administrador
+    // Crear tablas si no existen
+    console.log('🔧 Verificando y creando tablas...');
+
+    // Crear tabla de usuarios
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL,
+        apellido VARCHAR(100) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        telefono VARCHAR(20),
+        direccion TEXT,
+        fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        activo BOOLEAN DEFAULT TRUE,
+        INDEX idx_email (email)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Tabla usuarios verificada/creada');
+
+    // Crear tabla de administradores
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS administradores (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL,
+        apellido VARCHAR(100) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        rol ENUM('admin', 'super_admin') DEFAULT 'admin',
+        fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ultimo_acceso TIMESTAMP NULL,
+        activo BOOLEAN DEFAULT TRUE,
+        INDEX idx_email (email)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Tabla administradores verificada/creada');
+
+    // Crear tabla de categorías
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS categorias (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(100) UNIQUE NOT NULL,
+        descripcion TEXT,
+        activo BOOLEAN DEFAULT TRUE,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Tabla categorias verificada/creada');
+
+    // Crear tabla de productos
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS productos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(200) NOT NULL,
+        descripcion TEXT,
+        precio DECIMAL(10,2) NOT NULL,
+        stock INT DEFAULT 0,
+        categoria_id INT,
+        codigo_producto VARCHAR(50) UNIQUE,
+        marca VARCHAR(100),
+        modelo VARCHAR(100),
+        año_desde INT,
+        año_hasta INT,
+        imagen VARCHAR(500),
+        activo BOOLEAN DEFAULT TRUE,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (categoria_id) REFERENCES categorias(id) ON DELETE SET NULL,
+        INDEX idx_categoria (categoria_id),
+        INDEX idx_activo (activo),
+        INDEX idx_codigo (codigo_producto)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Tabla productos verificada/creada');
+
+    // Inicializar datos
+    console.log('📊 Inicializando datos...');
+
+    // Verificar y crear administrador por defecto
     const [existingAdmin] = await connection.execute(
       'SELECT id FROM administradores WHERE email = ?',
       ['admin@repuestera.com']
@@ -38,7 +118,7 @@ async function initProdDatabase() {
       console.log('👨‍💼 Administrador creado en Producción (email: admin@repuestera.com, password: admin123)');
     }
 
-    // Verificar categorías
+    // Verificar y crear categorías
     const [categorias] = await connection.execute('SELECT COUNT(*) as count FROM categorias');
     if (categorias[0].count === 0) {
       const categoriasData = [
@@ -54,14 +134,16 @@ async function initProdDatabase() {
 
       for (const [nombre, descripcion] of categoriasData) {
         await connection.execute(
-          'INSERT INTO categorias (nombre, descripcion) VALUES (?, ?)',
+          'INSERT IGNORE INTO categorias (nombre, descripcion) VALUES (?, ?)',
           [nombre, descripcion]
         );
       }
       console.log('📂 Categorías insertadas en Producción');
+    } else {
+      console.log(`📂 Ya existen ${categorias[0].count} categorías en Producción`);
     }
 
-    // Verificar productos de ejemplo
+    // Verificar y crear productos de ejemplo
     const [productos] = await connection.execute('SELECT COUNT(*) as count FROM productos');
     if (productos[0].count === 0) {
       const productosEjemplo = [
@@ -75,12 +157,14 @@ async function initProdDatabase() {
 
       for (const producto of productosEjemplo) {
         await connection.execute(`
-          INSERT INTO productos 
+          INSERT IGNORE INTO productos 
           (nombre, descripcion, precio, stock, imagen, categoria_id, codigo_producto, marca, modelo, año_desde, año_hasta) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, producto);
       }
       console.log('🔧 Productos de ejemplo insertados en Producción');
+    } else {
+      console.log(`🔧 Ya existen ${productos[0].count} productos en Producción`);
     }
 
     console.log('✅ Base de datos Producción inicializada correctamente');

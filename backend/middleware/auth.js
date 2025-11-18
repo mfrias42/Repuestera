@@ -93,26 +93,41 @@ const verifyUser = async (req, res, next) => {
 const verifyAdmin = async (req, res, next) => {
   try {
     if (!req.user || req.user.type !== 'admin') {
+      console.error('❌ verifyAdmin: req.user no existe o no es admin', { 
+        hasUser: !!req.user, 
+        userType: req.user?.type 
+      });
       return res.status(403).json({
         error: 'Acceso denegado',
         message: 'Se requiere autenticación de administrador'
       });
     }
 
+    console.log(`🔍 verifyAdmin: Buscando admin con ID: ${req.user.id}`);
     const admin = await Admin.findById(req.user.id);
     
     if (!admin) {
+      console.error(`❌ verifyAdmin: Admin no encontrado con ID: ${req.user.id}`);
       return res.status(404).json({
         error: 'Administrador no encontrado',
         message: 'El administrador asociado al token no existe'
       });
     }
 
+    console.log(`✅ verifyAdmin: Admin encontrado - ID: ${admin.id}, Email: ${admin.email}, Rol: ${admin.rol || 'null'}, Activo: ${admin.activo}`);
+
     if (!admin.activo) {
+      console.error(`❌ verifyAdmin: Admin inactivo - ID: ${admin.id}`);
       return res.status(403).json({
         error: 'Cuenta desactivada',
         message: 'Su cuenta de administrador ha sido desactivada'
       });
+    }
+
+    // Asegurar que el rol tenga un valor por defecto
+    if (!admin.rol) {
+      console.warn(`⚠️ verifyAdmin: Admin sin rol, asignando 'admin' por defecto - ID: ${admin.id}`);
+      admin.rol = 'admin';
     }
 
     // Actualizar último acceso
@@ -121,6 +136,7 @@ const verifyAdmin = async (req, res, next) => {
     req.currentAdmin = admin;
     next();
   } catch (error) {
+    console.error('❌ verifyAdmin: Error al verificar administrador:', error);
     return res.status(500).json({
       error: 'Error de verificación',
       message: 'Error interno del servidor al verificar el administrador'
@@ -132,13 +148,19 @@ const verifyAdmin = async (req, res, next) => {
 const requirePermission = (permission) => {
   return (req, res, next) => {
     if (!req.currentAdmin) {
+      console.error('❌ requirePermission: No hay currentAdmin en la request');
       return res.status(403).json({
         error: 'Acceso denegado',
         message: 'Se requiere autenticación de administrador'
       });
     }
 
-    if (!req.currentAdmin.canPerformAction(permission)) {
+    console.log(`🔐 Verificando permiso: ${permission} para admin ID: ${req.currentAdmin.id}, rol: ${req.currentAdmin.rol || 'null'}`);
+    const hasPermission = req.currentAdmin.canPerformAction(permission);
+    console.log(`✅ Resultado verificación permiso: ${hasPermission}`);
+
+    if (!hasPermission) {
+      console.error(`❌ Permiso denegado: ${permission} para admin ID: ${req.currentAdmin.id}, rol: ${req.currentAdmin.rol || 'null'}`);
       return res.status(403).json({
         error: 'Permisos insuficientes',
         message: `No tiene permisos para realizar la acción: ${permission}`

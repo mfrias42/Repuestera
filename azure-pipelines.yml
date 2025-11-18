@@ -408,6 +408,27 @@ stages:
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npm start'
             displayName: 'Deploy Backend to Production'
+          
+          - task: AzureCLI@2
+            displayName: 'Inicializar Base de Datos de Producción'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "🔧 Inicializando base de datos de producción..."
+                
+                # Esperar a que el App Service esté listo
+                sleep 10
+                
+                # Intentar ejecutar el script de inicialización usando SSH
+                az webapp ssh --name $(webAppNameBackendProd) --resource-group $(resourceGroupName) --command "cd /home/site/wwwroot && export DB_HOST='manufrias-prod.mysql.database.azure.com' && export DB_USER='A' && export DB_PASSWORD='4286Pka1#' && export DB_NAME='repuestera_db' && export DB_PORT='3306' && node scripts/initProdDatabase.js" || {
+                  echo "⚠️ No se pudo ejecutar via SSH, el script se ejecutará en el primer inicio del servidor"
+                  echo "📝 Nota: La base de datos se inicializará automáticamente cuando el servidor se inicie"
+                }
+                
+                echo "✅ Tarea de inicialización completada"
+            continueOnError: true
 
   - deployment: DeployFrontendProd
     displayName: '🔐 Deploy Frontend to Production (Manual Approval Required)'

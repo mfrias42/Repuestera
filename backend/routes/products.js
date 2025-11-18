@@ -133,10 +133,22 @@ router.get('/',
     } catch (error) {
       console.error('❌ Error detallado obteniendo productos:', {
         message: error.message,
+        code: error.code,
+        errno: error.errno,
+        sqlState: error.sqlState,
         stack: error.stack,
         query: req.query,
         origin: req.headers.origin
       });
+      
+      // Verificar si es un error de tabla no encontrada
+      if (error.code === 'ER_NO_SUCH_TABLE' || error.message.includes("doesn't exist")) {
+        return res.status(500).json({
+          error: 'Base de datos no inicializada',
+          message: 'Las tablas de la base de datos no existen. Por favor, ejecute el script de inicialización.'
+        });
+      }
+      
       res.status(500).json({
         error: 'Error interno del servidor',
         message: 'No se pudieron obtener los productos'
