@@ -1,47 +1,24 @@
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 
-// Cargar dotenv solo si existe el archivo (no en producción)
-try {
-  require('dotenv').config();
-} catch (e) {
-  // En producción, las variables vienen de App Service settings
-  console.log('📝 Usando variables de entorno del sistema (Azure App Service)');
-}
-
 async function initProdDatabase() {
   let connection;
   
   try {
-    // Obtener configuración de variables de entorno (prioridad: env vars > defaults)
-    const dbConfig = {
+    // Configuración para Producción en Azure MySQL (igual estructura que QA)
+    connection = await mysql.createConnection({
       host: process.env.DB_HOST || 'manufrias-prod.mysql.database.azure.com',
-      port: parseInt(process.env.DB_PORT) || 3306,
+      port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER || 'A',
-      password: process.env.DB_PASSWORD || '',
+      password: process.env.DB_PASSWORD || '4286Pka1#',
       database: process.env.DB_NAME || 'repuestera_db',
       ssl: {
-        rejectUnauthorized: false, // No verificar certificado (Azure usa certificados auto-firmados)
-        require: true // Requerir SSL (ssl-mode=require)
+        rejectUnauthorized: false
       },
       connectTimeout: 60000
-    };
+    });
 
-    console.log('🔗 Intentando conectar a Azure MySQL Database Producción...');
-    console.log(`📊 Host: ${dbConfig.host}`);
-    console.log(`📊 Database: ${dbConfig.database}`);
-    console.log(`📊 User: ${dbConfig.user}`);
-    console.log(`📊 Port: ${dbConfig.port}`);
-    console.log(`📊 Password: ${dbConfig.password ? '***DEFINIDO***' : 'NO DEFINIDO'}`);
-
-    // Verificar que tenemos las credenciales necesarias
-    if (!dbConfig.password) {
-      throw new Error('DB_PASSWORD no está definida. Verifique las variables de entorno del App Service.');
-    }
-
-    connection = await mysql.createConnection(dbConfig);
-
-    console.log('✅ Conectado a Azure MySQL Database Producción');
+    console.log('🔗 Conectado a Azure MySQL Database Producción');
 
     // Crear tablas si no existen
     console.log('🔧 Verificando y creando tablas...');
