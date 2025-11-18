@@ -398,16 +398,17 @@ stages:
                 ]
             displayName: 'Configure Production Backend Settings'
           
-          - task: AzureWebApp@1
+          - task: AzureCLI@2
+            displayName: 'Esperar reinicio del App Service'
             inputs:
               azureSubscription: $(azureSubscription)
-              appType: 'webAppLinux'
-              appName: $(webAppNameBackendProd)
-              resourceGroupName: $(resourceGroupName)
-              package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
-              runtimeStack: 'NODE|20-lts'
-              startUpCommand: 'npm start'
-            displayName: 'Deploy Backend to Production'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "⏳ Esperando que el App Service termine de reiniciar después de configurar variables..."
+                sleep 10
+                echo "✅ Espera completada"
+            continueOnError: false
           
           - task: AzureCLI@2
             displayName: 'Inicializar Base de Datos de Producción'
