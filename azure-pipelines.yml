@@ -419,12 +419,19 @@ stages:
                 echo "🔧 Inicializando base de datos de producción..."
                 
                 # Esperar a que el App Service esté listo
-                sleep 10
+                echo "⏳ Esperando que el App Service esté listo..."
+                sleep 15
+                
+                # Verificar que el App Service está corriendo
+                APP_STATUS=$(az webapp show --name $(webAppNameBackendProd) --resource-group $(resourceGroupName) --query "state" -o tsv)
+                echo "📊 Estado del App Service: $APP_STATUS"
                 
                 # Intentar ejecutar el script de inicialización usando SSH
-                az webapp ssh --name $(webAppNameBackendProd) --resource-group $(resourceGroupName) --command "cd /home/site/wwwroot && export DB_HOST='manufrias-prod.mysql.database.azure.com' && export DB_USER='A' && export DB_PASSWORD='4286Pka1#' && export DB_NAME='repuestera_db' && export DB_PORT='3306' && node scripts/initProdDatabase.js" || {
-                  echo "⚠️ No se pudo ejecutar via SSH, el script se ejecutará en el primer inicio del servidor"
-                  echo "📝 Nota: La base de datos se inicializará automáticamente cuando el servidor se inicie"
+                echo "🔐 Intentando ejecutar script de inicialización via SSH..."
+                az webapp ssh --name $(webAppNameBackendProd) --resource-group $(resourceGroupName) --command "cd /home/site/wwwroot && node scripts/initProdDatabase.js" || {
+                  echo "⚠️ No se pudo ejecutar via SSH"
+                  echo "📝 El servidor intentará inicializar automáticamente en el próximo reinicio"
+                  echo "📝 O puede ejecutar manualmente: az webapp ssh --name $(webAppNameBackendProd) --resource-group $(resourceGroupName)"
                 }
                 
                 echo "✅ Tarea de inicialización completada"

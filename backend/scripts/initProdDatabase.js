@@ -1,13 +1,20 @@
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
-require('dotenv').config();
+
+// Cargar dotenv solo si existe el archivo (no en producción)
+try {
+  require('dotenv').config();
+} catch (e) {
+  // En producción, las variables vienen de App Service settings
+  console.log('📝 Usando variables de entorno del sistema (Azure App Service)');
+}
 
 async function initProdDatabase() {
   let connection;
   
   try {
-    // Configuración para Producción en Azure MySQL
-    connection = await mysql.createConnection({
+    // Obtener configuración de variables de entorno (prioridad: env vars > defaults)
+    const dbConfig = {
       host: process.env.DB_HOST || 'manufrias-prod.mysql.database.azure.com',
       port: parseInt(process.env.DB_PORT) || 3306,
       user: process.env.DB_USER || 'A',
@@ -17,10 +24,23 @@ async function initProdDatabase() {
         rejectUnauthorized: false
       },
       connectTimeout: 60000
-    });
+    };
 
-    console.log('🔗 Conectado a Azure MySQL Database Producción');
-    console.log(`📊 Base de datos: ${process.env.DB_NAME || 'repuestera_db'}`);
+    console.log('🔗 Intentando conectar a Azure MySQL Database Producción...');
+    console.log(`📊 Host: ${dbConfig.host}`);
+    console.log(`📊 Database: ${dbConfig.database}`);
+    console.log(`📊 User: ${dbConfig.user}`);
+    console.log(`📊 Port: ${dbConfig.port}`);
+    console.log(`📊 Password: ${dbConfig.password ? '***DEFINIDO***' : 'NO DEFINIDO'}`);
+
+    // Verificar que tenemos las credenciales necesarias
+    if (!dbConfig.password) {
+      throw new Error('DB_PASSWORD no está definida. Verifique las variables de entorno del App Service.');
+    }
+
+    connection = await mysql.createConnection(dbConfig);
+
+    console.log('✅ Conectado a Azure MySQL Database Producción');
 
     // Crear tablas si no existen
     console.log('🔧 Verificando y creando tablas...');
@@ -175,7 +195,20 @@ async function initProdDatabase() {
 
   } catch (error) {
     console.error('❌ Error inicializando base de datos Producción:', error);
-    process.exit(1);
+    console.error('❌ Detalles del error:', {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      stack: error.stack
+    });
+    
+    // Si se ejecuta desde el servidor, no hacer exit(1) para no detener el servidor
+    if (require.main === module) {
+      process.exit(1);
+    } else {
+      throw error; // Re-lanzar para que el llamador maneje el error
+    }
   } finally {
     if (connection) {
       await connection.end();

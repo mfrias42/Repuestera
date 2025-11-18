@@ -12,20 +12,74 @@ const debugRoutes = require('./routes/debug');
 const testRoutes = require('./routes/test-simple');
 
 // Inicializar base de datos MySQL
-const { testConnection, initializeTables } = require('./config/database-mysql');
-const { fixDatabase } = require('./scripts/fixDatabase');
+const { testConnection, initializeTables, executeQuery } = require('./config/database-mysql');
+const { initProdDatabase } = require('./scripts/initProdDatabase');
 
-// Probar conexión a la base de datos al iniciar (sin reparación automática)
-testConnection().then(success => {
-  if (success) {
-    console.log('✅ Base de datos conectada correctamente');
-    // Comentado para evitar timeout en el pipeline
-    // return fixDatabase();
-  } else {
-    console.error('❌ Error conectando a la base de datos');
-    throw new Error('No se pudo conectar a la base de datos');
+// Función para verificar si las tablas existen
+async function checkTablesExist() {
+  try {
+    const query = `
+      SELECT COUNT(*) as count 
+      FROM information_schema.tables 
+      WHERE table_schema = DATABASE() 
+      AND table_name IN ('usuarios', 'administradores', 'categorias', 'productos')
+    `;
+    const result = await executeQuery(query);
+    return result[0].count === 4;
+  } catch (error) {
+    console.error('❌ Error verificando tablas:', error.message);
+    return false;
   }
-}).catch(console.error);
+}
+
+// Probar conexión y inicializar base de datos si es necesario
+async function initializeDatabase() {
+  try {
+    const connected = await testConnection();
+    if (!connected) {
+      console.error('❌ Error conectando a la base de datos');
+      return false;
+    }
+
+    console.log('✅ Base de datos conectada correctamente');
+
+    // Verificar si las tablas existen
+    const tablesExist = await checkTablesExist();
+    
+    if (!tablesExist) {
+      console.log('⚠️  Las tablas no existen. Inicializando base de datos...');
+      
+      // Solo inicializar en producción si DB_TYPE es mysql
+      if (process.env.DB_TYPE === 'mysql' && process.env.NODE_ENV === 'production') {
+        try {
+          await initProdDatabase();
+          console.log('✅ Base de datos de producción inicializada correctamente');
+        } catch (error) {
+          console.error('❌ Error inicializando base de datos de producción:', error.message);
+          // No lanzar error para que el servidor pueda iniciar
+        }
+      } else {
+        // Para otros ambientes, usar initializeTables
+        try {
+          await initializeTables();
+          console.log('✅ Tablas inicializadas correctamente');
+        } catch (error) {
+          console.error('❌ Error inicializando tablas:', error.message);
+        }
+      }
+    } else {
+      console.log('✅ Las tablas ya existen');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('❌ Error en inicialización de base de datos:', error);
+    return false;
+  }
+}
+
+// Inicializar base de datos al iniciar (no bloqueante)
+initializeDatabase().catch(console.error);
 
 const app = express();
 const PORT = process.env.PORT || 8000;
