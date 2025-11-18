@@ -362,7 +362,7 @@ stages:
                   },
                   {
                     "name": "DB_HOST",
-                    "value": "manufrias.mysql.database.azure.com",
+                    "value": "manufrias-prod.mysql.database.azure.com",
                     "slotSetting": false
                   },
                   {
