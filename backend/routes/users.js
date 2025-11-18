@@ -72,10 +72,33 @@ router.get('/',
       });
 
     } catch (error) {
-      console.error('Error obteniendo usuarios:', error);
+      console.error('❌ Error detallado obteniendo usuarios:', {
+        message: error.message,
+        code: error.code,
+        errno: error.errno,
+        sqlState: error.sqlState,
+        sqlMessage: error.sqlMessage,
+        stack: error.stack
+      });
+      
+      if (error.code === 'ER_NO_SUCH_TABLE') {
+        return res.status(500).json({
+          error: 'Base de datos no inicializada',
+          message: 'La tabla de usuarios no existe. Por favor, ejecute el script de inicialización.'
+        });
+      }
+      
+      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        return res.status(500).json({
+          error: 'Error de conexión',
+          message: 'No se pudo conectar a la base de datos'
+        });
+      }
+      
       res.status(500).json({
         error: 'Error interno del servidor',
-        message: 'No se pudieron obtener los usuarios'
+        message: error.message || 'No se pudieron obtener los usuarios',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }
