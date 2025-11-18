@@ -3,22 +3,67 @@ const bcrypt = require('bcryptjs');
 
 async function initProdDatabase() {
   let connection;
+  let connectionWithoutDB;
   
   try {
-    // Configuración para Producción en Azure MySQL (igual estructura que QA)
-    connection = await mysql.createConnection({
+    // Log de configuración (sin mostrar password completo)
+    console.log('🔧 Inicializando base de datos de producción...');
+    const dbName = process.env.DB_NAME || 'repuestera_db';
+    console.log('📊 Configuración:', {
       host: process.env.DB_HOST || 'manufrias-prod.mysql.database.azure.com',
       port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER || 'A',
-      password: process.env.DB_PASSWORD || '4286Pka1#',
-      database: process.env.DB_NAME || 'repuestera_db',
+      database: dbName,
+      password: process.env.DB_PASSWORD ? '***DEFINIDO***' : 'NO DEFINIDO',
+      ssl: 'enabled (rejectUnauthorized: false)'
+    });
+    
+    // PRIMERO: Conectar sin especificar base de datos para crearla si no existe
+    console.log('🔗 Conectando al servidor MySQL (sin base de datos específica)...');
+    connectionWithoutDB = await mysql.createConnection({
+      host: process.env.DB_HOST || 'manufrias-prod.mysql.database.azure.com',
+      port: parseInt(process.env.DB_PORT) || 3306,
+      user: process.env.DB_USER || 'A',
+      password: process.env.DB_PASSWORD || '4286Pk1#',
       ssl: {
         rejectUnauthorized: false
       },
       connectTimeout: 60000
     });
 
-    console.log('🔗 Conectado a Azure MySQL Database Producción');
+    console.log('✅ Conectado al servidor MySQL');
+    
+    // Crear base de datos si no existe
+    console.log(`📊 Verificando/creando base de datos '${dbName}'...`);
+    await connectionWithoutDB.execute(
+      `CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+    );
+    console.log(`✅ Base de datos '${dbName}' verificada/creada`);
+    
+    // Cerrar conexión sin base de datos
+    await connectionWithoutDB.end();
+    connectionWithoutDB = null;
+    
+    // SEGUNDO: Conectar a la base de datos específica
+    console.log(`🔗 Conectando a la base de datos '${dbName}'...`);
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST || 'manufrias-prod.mysql.database.azure.com',
+      port: parseInt(process.env.DB_PORT) || 3306,
+      user: process.env.DB_USER || 'A',
+      password: process.env.DB_PASSWORD || '4286Pk1#',
+      database: dbName,
+      ssl: {
+        rejectUnauthorized: false
+      },
+      connectTimeout: 60000
+    });
+
+    console.log('✅ Conectado a Azure MySQL Database Producción');
+    
+    // Verificar conexión
+    const [testResult] = await connection.execute('SELECT DATABASE() as db, USER() as user');
+    console.log('✅ Base de datos actual:', testResult[0].db);
+    console.log('✅ Usuario actual:', testResult[0].user);
 
     // Crear tablas si no existen
     console.log('🔧 Verificando y creando tablas...');
@@ -172,14 +217,31 @@ async function initProdDatabase() {
     console.log('📦 Productos de ejemplo disponibles para pruebas');
 
   } catch (error) {
-    console.error('❌ Error inicializando base de datos Producción:', error);
+    console.error('❌ Error inicializando base de datos Producción:');
     console.error('❌ Detalles del error:', {
       message: error.message,
       code: error.code,
       errno: error.errno,
       sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage,
       stack: error.stack
     });
+    
+    // Mensajes específicos según el tipo de error
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      console.error('❌ No se pudo conectar al servidor MySQL. Verifique:');
+      console.error('   - DB_HOST está correcto');
+      console.error('   - El servidor está accesible desde Azure');
+      console.error('   - Las reglas de firewall permiten la conexión');
+    } else if (error.code === 'ER_ACCESS_DENIED_ERROR' || error.code === 1045) {
+      console.error('❌ Error de autenticación. Verifique:');
+      console.error('   - DB_USER está correcto');
+      console.error('   - DB_PASSWORD está correcto');
+    } else if (error.code === 'ER_BAD_DB_ERROR' || error.code === 1049) {
+      console.error('❌ La base de datos no existe. Verifique:');
+      console.error('   - DB_NAME está correcto');
+      console.error('   - La base de datos fue creada en Azure');
+    }
     
     // Si se ejecuta desde el servidor, no hacer exit(1) para no detener el servidor
     if (require.main === module) {
@@ -188,8 +250,21 @@ async function initProdDatabase() {
       throw error; // Re-lanzar para que el llamador maneje el error
     }
   } finally {
+    if (connectionWithoutDB) {
+      try {
+        await connectionWithoutDB.end();
+        console.log('✅ Conexión sin base de datos cerrada correctamente');
+      } catch (closeError) {
+        console.error('⚠️ Error cerrando conexión sin base de datos:', closeError.message);
+      }
+    }
     if (connection) {
-      await connection.end();
+      try {
+        await connection.end();
+        console.log('✅ Conexión cerrada correctamente');
+      } catch (closeError) {
+        console.error('⚠️ Error cerrando conexión:', closeError.message);
+      }
     }
   }
 }
