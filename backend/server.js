@@ -35,9 +35,14 @@ async function checkTablesExist() {
 // Probar conexión y inicializar base de datos si es necesario
 async function initializeDatabase() {
   try {
+    console.log('🚀 Iniciando verificación e inicialización de base de datos...');
+    console.log('📊 Ambiente:', process.env.NODE_ENV || 'development');
+    console.log('📊 DB_TYPE:', process.env.DB_TYPE || 'NO DEFINIDO');
+    
     const connected = await testConnection();
     if (!connected) {
-      console.error('❌ Error conectando a la base de datos');
+      console.error('❌ Error conectando a la base de datos. El servidor continuará pero algunas funciones no funcionarán.');
+      console.error('❌ Verifique las variables de entorno: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT');
       return false;
     }
 
@@ -45,35 +50,55 @@ async function initializeDatabase() {
 
     // Verificar si las tablas existen
     const tablesExist = await checkTablesExist();
+    console.log('📊 Estado de las tablas:', tablesExist ? 'Existen' : 'No existen');
     
     if (!tablesExist) {
       console.log('⚠️  Las tablas no existen. Inicializando base de datos...');
       
       // Solo inicializar en producción si DB_TYPE es mysql
       if (process.env.DB_TYPE === 'mysql' && process.env.NODE_ENV === 'production') {
+        console.log('🔧 Ejecutando script de inicialización de producción...');
         try {
           await initProdDatabase();
           console.log('✅ Base de datos de producción inicializada correctamente');
         } catch (error) {
-          console.error('❌ Error inicializando base de datos de producción:', error.message);
+          console.error('❌ Error detallado inicializando base de datos de producción:', {
+            message: error.message,
+            code: error.code,
+            errno: error.errno,
+            sqlState: error.sqlState,
+            stack: error.stack
+          });
           // No lanzar error para que el servidor pueda iniciar
         }
       } else {
         // Para otros ambientes, usar initializeTables
+        console.log('🔧 Ejecutando inicialización de tablas estándar...');
         try {
           await initializeTables();
           console.log('✅ Tablas inicializadas correctamente');
         } catch (error) {
-          console.error('❌ Error inicializando tablas:', error.message);
+          console.error('❌ Error inicializando tablas:', {
+            message: error.message,
+            code: error.code,
+            errno: error.errno,
+            sqlState: error.sqlState
+          });
         }
       }
     } else {
-      console.log('✅ Las tablas ya existen');
+      console.log('✅ Las tablas ya existen. Base de datos lista.');
     }
 
     return true;
   } catch (error) {
-    console.error('❌ Error en inicialización de base de datos:', error);
+    console.error('❌ Error en inicialización de base de datos:', {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      stack: error.stack
+    });
     return false;
   }
 }
@@ -151,11 +176,42 @@ app.use('/api/test', testRoutes);
 app.get('/api/health', async (req, res) => {
   try {
     const dbStatus = await testConnection();
+    
+    // Verificar si las tablas existen
+    let tablesStatus = 'unknown';
+    let tablesCount = 0;
+    try {
+      const tablesQuery = `
+        SELECT COUNT(*) as count 
+        FROM information_schema.tables 
+        WHERE table_schema = DATABASE() 
+        AND table_name IN ('usuarios', 'administradores', 'categorias', 'productos')
+      `;
+      const { executeQuery } = require('./config/database-mysql');
+      const result = await executeQuery(tablesQuery);
+      tablesCount = result[0].count;
+      tablesStatus = tablesCount === 4 ? 'completas' : `incompletas (${tablesCount}/4)`;
+    } catch (error) {
+      tablesStatus = 'error verificando';
+      console.error('Error verificando tablas:', error.message);
+    }
+    
     res.json({ 
       status: 'OK', 
       message: 'Servidor funcionando correctamente',
-      database: dbStatus ? 'Conectada' : 'Desconectada',
+      database: {
+        connected: dbStatus,
+        status: dbStatus ? 'Conectada' : 'Desconectada',
+        tables: tablesStatus,
+        tablesCount: tablesCount
+      },
       environment: process.env.NODE_ENV || 'development',
+      config: {
+        dbHost: process.env.DB_HOST || 'NO DEFINIDO',
+        dbName: process.env.DB_NAME || 'NO DEFINIDO',
+        dbUser: process.env.DB_USER || 'NO DEFINIDO',
+        dbType: process.env.DB_TYPE || 'NO DEFINIDO'
+      },
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -163,7 +219,11 @@ app.get('/api/health', async (req, res) => {
     res.status(500).json({
       status: 'ERROR',
       message: 'Error en el servidor',
-      database: 'Error de conexión',
+      database: {
+        connected: false,
+        status: 'Error de conexión',
+        error: error.message
+      },
       environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString()
     });

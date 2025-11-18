@@ -136,22 +136,50 @@ router.get('/',
         code: error.code,
         errno: error.errno,
         sqlState: error.sqlState,
+        sqlMessage: error.sqlMessage,
         stack: error.stack,
         query: req.query,
         origin: req.headers.origin
       });
       
-      // Verificar si es un error de tabla no encontrada
-      if (error.code === 'ER_NO_SUCH_TABLE' || error.message.includes("doesn't exist")) {
+      // Errores específicos de base de datos
+      if (error.code === 'ER_NO_SUCH_TABLE' || error.message.includes("doesn't exist") || error.message.includes("Unknown table")) {
         return res.status(500).json({
           error: 'Base de datos no inicializada',
-          message: 'Las tablas de la base de datos no existen. Por favor, ejecute el script de inicialización.'
+          message: 'Las tablas de la base de datos no existen. El servidor intentará inicializarlas automáticamente.',
+          details: 'Por favor, espere unos segundos y recargue la página. Si el problema persiste, verifique los logs del servidor.'
+        });
+      }
+      
+      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT' || error.code === 'PROTOCOL_CONNECTION_LOST') {
+        return res.status(500).json({
+          error: 'Error de conexión a la base de datos',
+          message: 'No se pudo conectar a la base de datos. Verifique la configuración de conexión.',
+          details: error.message
+        });
+      }
+      
+      if (error.code === 'ER_ACCESS_DENIED_ERROR' || error.code === 1045) {
+        return res.status(500).json({
+          error: 'Error de autenticación',
+          message: 'Las credenciales de la base de datos son incorrectas.',
+          details: 'Verifique DB_USER y DB_PASSWORD en las variables de entorno.'
+        });
+      }
+      
+      if (error.code === 'ER_BAD_DB_ERROR' || error.code === 1049) {
+        return res.status(500).json({
+          error: 'Base de datos no encontrada',
+          message: 'La base de datos especificada no existe.',
+          details: `Verifique que la base de datos '${process.env.DB_NAME || 'repuestera_db'}' exista en el servidor.`
         });
       }
       
       res.status(500).json({
         error: 'Error interno del servidor',
-        message: 'No se pudieron obtener los productos'
+        message: 'No se pudieron obtener los productos',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        errorCode: error.code || 'UNKNOWN'
       });
     }
   }

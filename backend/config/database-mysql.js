@@ -45,12 +45,32 @@ async function getConnection() {
 // Función para probar la conexión
 async function testConnection() {
   try {
+    console.log('🔍 Intentando conectar a MySQL...');
+    console.log('🔍 Variables de entorno:', {
+      DB_HOST: process.env.DB_HOST || 'NO DEFINIDO',
+      DB_USER: process.env.DB_USER || 'NO DEFINIDO',
+      DB_NAME: process.env.DB_NAME || 'NO DEFINIDO',
+      DB_PORT: process.env.DB_PORT || 'NO DEFINIDO',
+      DB_PASSWORD: process.env.DB_PASSWORD ? '***DEFINIDO***' : 'NO DEFINIDO',
+      DB_TYPE: process.env.DB_TYPE || 'NO DEFINIDO',
+      NODE_ENV: process.env.NODE_ENV || 'NO DEFINIDO'
+    });
+    
     const connection = await getConnection();
-    const [rows] = await connection.execute('SELECT 1 as test');
+    const [rows] = await connection.execute('SELECT 1 as test, DATABASE() as current_db, USER() as current_user');
     console.log('✅ Conexión a MySQL Flexible Server verificada correctamente');
+    console.log('✅ Base de datos actual:', rows[0].current_db);
+    console.log('✅ Usuario actual:', rows[0].current_user);
     return true;
   } catch (err) {
-    console.error('❌ Error verificando conexión a MySQL:', err.message);
+    console.error('❌ Error detallado verificando conexión a MySQL:', {
+      message: err.message,
+      code: err.code,
+      errno: err.errno,
+      sqlState: err.sqlState,
+      sqlMessage: err.sqlMessage,
+      stack: err.stack
+    });
     return false;
   }
 }
@@ -62,7 +82,22 @@ async function executeQuery(query, params = []) {
     const [rows] = await connection.execute(query, params);
     return rows;
   } catch (err) {
-    console.error('❌ Error ejecutando query MySQL:', err.message);
+    console.error('❌ Error ejecutando query MySQL:', {
+      message: err.message,
+      code: err.code,
+      errno: err.errno,
+      sqlState: err.sqlState,
+      sqlMessage: err.sqlMessage,
+      query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
+      params: params.length > 0 ? '[' + params.length + ' params]' : 'no params'
+    });
+    
+    // Si es un error de conexión, intentar reconectar
+    if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT' || err.code === 'PROTOCOL_CONNECTION_LOST') {
+      console.log('🔄 Intentando reconectar a la base de datos...');
+      pool = null; // Resetear el pool para forzar reconexión
+    }
+    
     throw err;
   }
 }
