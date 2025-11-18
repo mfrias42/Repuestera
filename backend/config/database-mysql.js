@@ -8,9 +8,10 @@ const config = {
   user: process.env.DB_USER || 'repuestera_admin',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'repuestera_db',
-  ssl: {
-    rejectUnauthorized: false // Para Azure MySQL Flexible Server
-  },
+  ssl: process.env.DB_HOST && process.env.DB_HOST.includes('mysql.database.azure.com') ? {
+    rejectUnauthorized: false, // Para Azure MySQL Flexible Server
+    require: true // Requerir SSL (ssl-mode=require)
+  } : false, // No usar SSL para conexiones locales
   connectionLimit: 10,
   acquireTimeout: 60000,
   timeout: 60000,
@@ -22,6 +23,8 @@ console.log('  Host:', config.host);
 console.log('  Database:', config.database);
 console.log('  User:', config.user);
 console.log('  Port:', config.port);
+console.log('  SSL:', config.ssl ? (config.ssl.require ? 'REQUIRED' : 'enabled') : 'disabled');
+console.log('  Password:', config.password ? '***DEFINIDO***' : 'NO DEFINIDO');
 
 // Pool de conexiones
 let pool;

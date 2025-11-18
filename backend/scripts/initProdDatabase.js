@@ -21,7 +21,8 @@ async function initProdDatabase() {
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'repuestera_db',
       ssl: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false, // No verificar certificado (Azure usa certificados auto-firmados)
+        require: true // Requerir SSL (ssl-mode=require)
       },
       connectTimeout: 60000
     };
