@@ -66,9 +66,8 @@ stages:
       condition: always()
       inputs:
         codeCoverageTool: 'Cobertura'
-        summaryFileLocation: 'backend/coverage/cobertura-coverage.xml'
+        summaryFileLocation: 'backend/coverage/lcov.info'
         reportDirectory: 'backend/coverage'
-        additionalCodeCoverageFiles: 'backend/coverage/lcov.info'
         failIfCoverageEmpty: false
       displayName: 'Publicar coverage del backend'
 
