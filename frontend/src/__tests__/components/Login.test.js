@@ -6,8 +6,8 @@
 // Mock de react-router-dom ANTES de cualquier importación que lo use
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => {
-  // Usar require para obtener React de forma segura
-  const React = require('react');
+  // Usar jest.requireActual para obtener React de forma segura
+  const React = jest.requireActual('react');
   return {
     BrowserRouter: ({ children }) => React.createElement('div', { 'data-testid': 'browser-router' }, children),
     Routes: ({ children }) => React.createElement('div', {}, children),

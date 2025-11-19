@@ -187,7 +187,7 @@ describe('Product Model', () => {
       // Assert
       expect(result.activo).toBe(false);
       expect(executeQuery).toHaveBeenCalledWith(
-        'UPDATE productos SET activo = FALSE WHERE id = ?',
+        'UPDATE productos SET activo = FALSE, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?',
         [product.id]
       );
     });
