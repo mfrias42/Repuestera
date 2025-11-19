@@ -106,13 +106,15 @@ stages:
     
     - script: |
         cd frontend
-        # Ejecutar tests con variable de entorno para generar junit.xml automáticamente
-        export JEST_JUNIT_OUTPUT_DIR=coverage
-        export JEST_JUNIT_OUTPUT_NAME=junit.xml
-        export JEST_JUNIT_SUITE_NAME="Frontend Tests"
         CI=true npm test -- --watchAll=false --coverage --ci --passWithNoTests --testPathIgnorePatterns="App.test.js"
       displayName: 'Ejecutar pruebas del frontend'
       continueOnError: false
+
+    - script: |
+        cd frontend
+        node generate-junit.js
+      displayName: 'Generar reporte JUnit del frontend'
+      continueOnError: true
 
     - task: PublishTestResults@2
       condition: always()
