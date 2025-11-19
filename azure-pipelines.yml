@@ -28,6 +28,7 @@ stages:
 - stage: Build
   displayName: 'Construcción'
   jobs:
+  # Job 1: Backend - Se ejecuta primero porque otros pueden depender de él
   - job: BuildBackend
     displayName: 'Construir Backend'
     pool:
@@ -76,10 +77,12 @@ stages:
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del backend'
 
+  # Job 2: Frontend QA - Se ejecuta en paralelo con Backend (tests + build con URL de QA)
   - job: BuildFrontendQA
     displayName: 'Construir Frontend para QA'
     pool:
       vmImage: 'ubuntu-latest'
+    # No depende de BuildBackend porque son independientes
     
     steps:
     - task: NodeTool@0
@@ -90,6 +93,10 @@ stages:
     - script: |
         cd frontend
         npm install
+      displayName: 'Instalar dependencias del frontend'
+
+    - script: |
+        cd frontend
         CI=true npm test -- --watchAll=false --coverage --ci --passWithNoTests
       displayName: 'Ejecutar pruebas del frontend'
       continueOnError: false
@@ -97,7 +104,7 @@ stages:
     - script: |
         cd frontend
         npm run build
-      displayName: 'Instalar dependencias y construir para QA'
+      displayName: 'Construir frontend para QA'
       env:
         REACT_APP_API_URL: $(apiUrlQA)
         NODE_ENV: 'production'
@@ -118,10 +125,14 @@ stages:
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del frontend QA'
 
+  # Job 3: Frontend Producción - Se ejecuta en paralelo (solo build con URL de producción)
+  # NOTA: Builds separados son NECESARIOS porque el frontend necesita diferentes URLs de API
+  # en tiempo de compilación (REACT_APP_API_URL se inyecta en el código durante el build)
   - job: BuildFrontendProd
     displayName: 'Construir Frontend para Producción'
     pool:
       vmImage: 'ubuntu-latest'
+    # No depende de otros jobs, puede ejecutarse en paralelo
     
     steps:
     - task: NodeTool@0
@@ -132,8 +143,12 @@ stages:
     - script: |
         cd frontend
         npm install
+      displayName: 'Instalar dependencias del frontend'
+
+    - script: |
+        cd frontend
         npm run build
-      displayName: 'Instalar dependencias y construir para Producción'
+      displayName: 'Construir frontend para Producción'
       env:
         REACT_APP_API_URL: $(apiUrlProd)
         NODE_ENV: 'production'
