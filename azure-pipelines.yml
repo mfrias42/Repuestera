@@ -61,11 +61,10 @@ stages:
         testRunTitle: 'Backend Tests'
         failTaskOnFailedTests: false
       displayName: 'Publicar resultados de tests del backend'
-
-    - task: PublishCodeCoverageResults@1
+    
+    - task: PublishCodeCoverageResults@2
       condition: always()
       inputs:
-        codeCoverageTool: 'Cobertura'
         summaryFileLocation: 'backend/coverage/lcov.info'
         reportDirectory: 'backend/coverage'
         failIfCoverageEmpty: false
@@ -104,12 +103,19 @@ stages:
         cd frontend
         npm install
       displayName: 'Instalar dependencias del frontend'
-
+    
     - script: |
         cd frontend
         CI=true npm test -- --watchAll=false --coverage --ci --passWithNoTests --testPathIgnorePatterns="App.test.js"
       displayName: 'Ejecutar pruebas del frontend'
       continueOnError: false
+
+    - script: |
+        cd frontend
+        # Generar junit.xml usando jest-junit después de los tests
+        npx jest-junit --outputFile=coverage/junit.xml --suiteName="Frontend Tests" || echo "JUnit report generation skipped"
+      displayName: 'Generar reporte JUnit del frontend'
+      continueOnError: true
 
     - task: PublishTestResults@2
       condition: always()
@@ -119,11 +125,10 @@ stages:
         testRunTitle: 'Frontend Tests'
         failTaskOnFailedTests: false
       displayName: 'Publicar resultados de tests del frontend'
-
-    - task: PublishCodeCoverageResults@1
+    
+    - task: PublishCodeCoverageResults@2
       condition: always()
       inputs:
-        codeCoverageTool: 'Cobertura'
         summaryFileLocation: 'frontend/coverage/lcov.info'
         reportDirectory: 'frontend/coverage'
         failIfCoverageEmpty: false
@@ -172,7 +177,7 @@ stages:
         cd frontend
         npm install
       displayName: 'Instalar dependencias del frontend'
-
+    
     - script: |
         cd frontend
         npm run build

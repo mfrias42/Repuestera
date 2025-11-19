@@ -29,27 +29,11 @@
     "transformIgnorePatterns": [
       "node_modules/(?!(axios)/)"
     ],
-    "reporters": [
-      "default",
-      [
-        "jest-junit",
-        {
-          "outputDirectory": "coverage",
-          "outputName": "junit.xml",
-          "suiteName": "Frontend Tests",
-          "classNameTemplate": "{classname}",
-          "titleTemplate": "{title}",
-          "ancestorSeparator": " › ",
-          "usePathForSuiteName": "true"
-        }
-      ]
-    ],
     "coverageReporters": [
       "text",
       "lcov",
       "html",
-      "json",
-      "cobertura"
+      "json"
     ]
   },
   "eslintConfig": {

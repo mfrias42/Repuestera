@@ -18,7 +18,7 @@ module.exports = {
   // Configuración de cobertura
   collectCoverage: true,
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html', 'json', 'cobertura'],
+  coverageReporters: ['text', 'lcov', 'html', 'json'],
   
   // Reporters para resultados de tests
   reporters: [
