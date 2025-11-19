@@ -1,6 +1,7 @@
 # Azure DevOps Release Pipeline para Repuestera
 # Despliegue multi-ambiente: QA → Producción
 # TP05 - Ingeniería de Software 3
+# TP07 - Code Coverage, SonarCloud y Cypress E2E
 
 trigger:
 - main
@@ -207,7 +208,7 @@ stages:
     - task: SonarCloudAnalyze@1
       condition: always()
       displayName: 'SonarCloud: Ejecutar análisis frontend'
-
+    
     - task: SonarCloudPublish@1
       condition: always()
       inputs:
@@ -311,29 +312,50 @@ stages:
     - script: |
         # Iniciar backend en background
         cd backend
-        npm start &
+        npm start > backend.log 2>&1 &
         BACKEND_PID=$!
         echo "Backend iniciado con PID: $BACKEND_PID"
-        sleep 10
-        # Verificar que el backend esté corriendo
-        curl -f http://localhost:8000/api/health || exit 1
+        echo "Esperando a que el backend esté listo..."
+        for i in {1..30}; do
+          if curl -f http://localhost:8000/api/health > /dev/null 2>&1; then
+            echo "✅ Backend está listo"
+            break
+          fi
+          if [ $i -eq 30 ]; then
+            echo "❌ Backend no respondió después de 30 intentos"
+            cat backend.log
+            exit 1
+          fi
+          sleep 2
+        done
       displayName: 'Iniciar backend para pruebas E2E'
       continueOnError: false
 
     - script: |
         # Iniciar frontend en background
         cd frontend
-        npm start &
+        BROWSER=none npm start > frontend.log 2>&1 &
         FRONTEND_PID=$!
         echo "Frontend iniciado con PID: $FRONTEND_PID"
-        sleep 15
-        # Verificar que el frontend esté corriendo
-        curl -f http://localhost:3000 || exit 1
+        echo "Esperando a que el frontend esté listo..."
+        for i in {1..30}; do
+          if curl -f http://localhost:3000 > /dev/null 2>&1; then
+            echo "✅ Frontend está listo"
+            break
+          fi
+          if [ $i -eq 30 ]; then
+            echo "❌ Frontend no respondió después de 30 intentos"
+            cat frontend.log
+            exit 1
+          fi
+          sleep 2
+        done
       displayName: 'Iniciar frontend para pruebas E2E'
       continueOnError: false
 
     - script: |
         cd frontend
+        mkdir -p cypress/results
         npm run cypress:run:headless
       displayName: 'Ejecutar pruebas E2E con Cypress'
       continueOnError: false
@@ -345,7 +367,7 @@ stages:
       condition: always()
       inputs:
         testResultsFormat: 'JUnit'
-        testResultsFiles: 'frontend/cypress/results/*.xml'
+        testResultsFiles: 'cypress/results/*.xml'
         testRunTitle: 'Cypress E2E Tests'
         failTaskOnFailedTests: true
       displayName: 'Publicar resultados de pruebas E2E'
