@@ -400,6 +400,12 @@ stages:
     - script: |
         cd frontend
         mkdir -p cypress/results
+        # Verificar que cypress.config.js existe
+        if [ ! -f "cypress.config.js" ]; then
+          echo "##[error]No se encontró cypress.config.js en frontend/"
+          ls -la
+          exit 1
+        fi
         npm run cypress:run:headless
       displayName: 'Ejecutar pruebas E2E con Cypress'
       continueOnError: false
