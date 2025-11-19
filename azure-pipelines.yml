@@ -46,9 +46,11 @@ stages:
     
     - script: |
         cd backend
-        npm run test -- --coverage --ci
+        npm run test -- --coverage --ci --maxWorkers=2
       displayName: 'Ejecutar pruebas unitarias del backend'
       continueOnError: false
+      env:
+        CI: 'true'
     
     - task: PublishTestResults@2
       condition: always()

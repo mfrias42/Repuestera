@@ -17,7 +17,13 @@ jest.mock('../../../models/User', () => ({
   findById: jest.fn()
 }));
 
+// Importar módulos después de los mocks
 const jwt = require('jsonwebtoken');
+const authMiddleware = require('../../../middleware/auth');
+const Admin = require('../../../models/Admin');
+const User = require('../../../models/User');
+
+// Extraer funciones del módulo
 const {
   verifyToken,
   verifyAdmin,
@@ -25,9 +31,7 @@ const {
   requireSuperAdmin,
   generateAdminToken,
   generateUserToken
-} = require('../../../middleware/auth');
-const Admin = require('../../../models/Admin');
-const User = require('../../../models/User');
+} = authMiddleware;
 
 describe('Auth Middleware', () => {
   let req, res, next;
