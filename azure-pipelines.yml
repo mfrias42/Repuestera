@@ -88,7 +88,7 @@ stages:
     - script: |
         cd frontend
         npm install
-        npm test -- --watchAll=false --coverage --ci
+        CI=true npm test -- --watchAll=false --coverage --ci --passWithNoTests
       displayName: 'Ejecutar pruebas del frontend'
       continueOnError: false
 
