@@ -1,44 +1,89 @@
-// Mock de react-router-dom usando factory function
+// Mock de react-router-dom ANTES de cualquier importación
+// Usar jest.requireActual para evitar problemas de resolución en CI/CD
 jest.mock('react-router-dom', () => {
+  const React = jest.requireActual('react');
   return {
-    BrowserRouter: ({ children }) => children,
-    Routes: ({ children }) => children,
-    Route: ({ element }) => element,
-    Navigate: () => null,
-    Link: ({ children, to }) => children,
+    BrowserRouter: ({ children }) => React.createElement('div', { 'data-testid': 'browser-router' }, children),
+    Routes: ({ children }) => React.createElement('div', { 'data-testid': 'routes' }, children),
+    Route: ({ element }) => React.createElement('div', { 'data-testid': 'route' }, element),
+    Navigate: () => React.createElement('div', { 'data-testid': 'navigate' }, null),
+    Link: ({ children, to }) => React.createElement('a', { href: to }, children),
     useNavigate: () => jest.fn()
   };
 });
 
-// Mock de contextos
-jest.mock('./context/AuthContext', () => ({
-  AuthProvider: ({ children }) => children
-}));
+// Mock de contextos que App necesita
+jest.mock('./context/AuthContext', () => {
+  const React = jest.requireActual('react');
+  return {
+    AuthProvider: ({ children }) => React.createElement(React.Fragment, null, children)
+  };
+});
 
-jest.mock('./context/CartContext', () => ({
-  CartProvider: ({ children }) => children
-}));
+jest.mock('./context/CartContext', () => {
+  const React = jest.requireActual('react');
+  return {
+    CartProvider: ({ children }) => React.createElement(React.Fragment, null, children)
+  };
+});
 
 // Mock de componentes de páginas
-jest.mock('./pages/Login', () => () => null);
-jest.mock('./pages/Register', () => () => null);
-jest.mock('./pages/Products', () => () => null);
-jest.mock('./pages/Cart', () => () => null);
-jest.mock('./pages/Admin', () => () => null);
-jest.mock('./pages/Profile', () => () => null);
-jest.mock('./components/Navbar', () => () => null);
-jest.mock('./components/ProtectedRoute', () => ({ children }) => children);
+jest.mock('./pages/Login', () => {
+  const React = jest.requireActual('react');
+  return () => React.createElement('div', { 'data-testid': 'login-page' }, null);
+});
+
+jest.mock('./pages/Register', () => {
+  const React = jest.requireActual('react');
+  return () => React.createElement('div', { 'data-testid': 'register-page' }, null);
+});
+
+jest.mock('./pages/Products', () => {
+  const React = jest.requireActual('react');
+  return () => React.createElement('div', { 'data-testid': 'products-page' }, null);
+});
+
+jest.mock('./pages/Cart', () => {
+  const React = jest.requireActual('react');
+  return () => React.createElement('div', { 'data-testid': 'cart-page' }, null);
+});
+
+jest.mock('./pages/Admin', () => {
+  const React = jest.requireActual('react');
+  return () => React.createElement('div', { 'data-testid': 'admin-page' }, null);
+});
+
+jest.mock('./pages/Profile', () => {
+  const React = jest.requireActual('react');
+  return () => React.createElement('div', { 'data-testid': 'profile-page' }, null);
+});
+
+jest.mock('./components/Navbar', () => {
+  const React = jest.requireActual('react');
+  return () => React.createElement('div', { 'data-testid': 'navbar' }, null);
+});
+
+jest.mock('./components/ProtectedRoute', () => {
+  const React = jest.requireActual('react');
+  return ({ children }) => React.createElement(React.Fragment, null, children);
+});
 
 // Mock de Material-UI
-jest.mock('@mui/material/styles', () => ({
-  ThemeProvider: ({ children }) => children,
-  createTheme: () => ({})
-}));
+jest.mock('@mui/material/styles', () => {
+  const React = jest.requireActual('react');
+  return {
+    ThemeProvider: ({ children }) => React.createElement(React.Fragment, null, children),
+    createTheme: () => ({})
+  };
+});
 
-jest.mock('@mui/material', () => ({
-  CssBaseline: () => null,
-  Container: ({ children }) => children
-}));
+jest.mock('@mui/material', () => {
+  const React = jest.requireActual('react');
+  return {
+    CssBaseline: () => null,
+    Container: ({ children }) => React.createElement('div', { 'data-testid': 'container' }, children)
+  };
+});
 
 import React from 'react';
 import { render } from '@testing-library/react';
