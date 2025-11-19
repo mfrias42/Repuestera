@@ -18,7 +18,24 @@ module.exports = {
   // Configuración de cobertura
   collectCoverage: true,
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html', 'json'],
+  coverageReporters: ['text', 'lcov', 'html', 'json', 'cobertura'],
+  
+  // Reporters para resultados de tests
+  reporters: [
+    'default',
+    [
+      'jest-junit',
+      {
+        outputDirectory: 'coverage',
+        outputName: 'junit.xml',
+        suiteName: 'Backend Tests',
+        classNameTemplate: '{classname}',
+        titleTemplate: '{title}',
+        ancestorSeparator: ' › ',
+        usePathForSuiteName: 'true'
+      }
+    ]
+  ],
   collectCoverageFrom: [
     '**/*.js',
     '!**/node_modules/**',
