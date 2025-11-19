@@ -245,9 +245,15 @@ describe('User Model', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith(currentPassword, user.password);
+      // bcrypt.compare debe ser llamado con el password actual y el hash almacenado
+      expect(bcrypt.compare).toHaveBeenCalledWith(currentPassword, mockData.users[0].password);
+      // bcrypt.hash debe ser llamado con el nuevo password
       expect(bcrypt.hash).toHaveBeenCalledWith(newPassword, 12);
-      expect(executeQuery).toHaveBeenCalled();
+      // Verificar que executeQuery fue llamado con la query correcta y el nuevo hash
+      expect(executeQuery).toHaveBeenCalledWith(
+        'UPDATE usuarios SET password = ? WHERE id = ?',
+        [newHashedPassword, user.id]
+      );
     });
 
     test('debe lanzar error si la contraseña actual es incorrecta', async () => {
@@ -338,8 +344,7 @@ describe('User Model', () => {
       // Assert
       expect(count).toBe(2);
       expect(executeQuery).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT COUNT(*)'),
-        expect.any(Array)
+        'SELECT COUNT(*) as total FROM usuarios WHERE activo = TRUE'
       );
     });
   });

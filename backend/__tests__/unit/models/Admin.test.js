@@ -288,18 +288,22 @@ describe('Admin Model', () => {
   });
 
   describe('getStats', () => {
-    test('debe retornar estadísticas del administrador', () => {
+    test('debe retornar estadísticas del administrador', async () => {
       // Arrange
-      const admin = new Admin(mockData.admins[0]);
+      const adminData = mockData.admins[0];
+      const admin = new Admin(adminData);
 
       // Act
-      const stats = admin.getStats();
+      const stats = await admin.getStats();
 
       // Assert
+      expect(stats).toBeDefined();
       expect(stats).toHaveProperty('id');
       expect(stats).toHaveProperty('nombre');
       expect(stats).toHaveProperty('rol');
-      expect(stats.nombre).toBe('Admin Sistema');
+      expect(stats.id).toBe(adminData.id);
+      expect(stats.nombre).toBe(`${adminData.nombre} ${adminData.apellido}`); // 'Admin Sistema'
+      expect(stats.rol).toBe(adminData.rol);
     });
   });
 

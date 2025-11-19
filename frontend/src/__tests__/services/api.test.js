@@ -4,23 +4,24 @@
  */
 
 // Mock de axios ANTES de importar - versión más completa
-const mockAxiosInstance = {
-  get: jest.fn(),
-  post: jest.fn(),
-  put: jest.fn(),
-  delete: jest.fn(),
-  interceptors: {
-    request: { use: jest.fn() },
-    response: { use: jest.fn() }
-  }
-};
-
 jest.mock('axios', () => {
+  const mockAxiosInstance = {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() }
+    }
+  };
+  
   return {
     __esModule: true,
     default: {
       create: jest.fn(() => mockAxiosInstance)
-    }
+    },
+    mockAxiosInstance // Exportar para uso en tests
   };
 });
 
@@ -37,12 +38,15 @@ Object.defineProperty(window, 'localStorage', {
 
 import { productService, authService } from '../../services/api';
 
+// Obtener la instancia mockeada después de que el mock se haya ejecutado
+const axios = require('axios');
+const mockAxiosInstance = axios.mockAxiosInstance || axios.default.create();
+
 describe('API Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     window.localStorage.getItem.mockReturnValue('mock_token');
     // Asegurar que el mock de create retorne la instancia mockeada
-    const axios = require('axios');
     if (axios.default && axios.default.create) {
       axios.default.create.mockReturnValue(mockAxiosInstance);
     }
@@ -157,14 +161,18 @@ describe('API Service', () => {
       expect(mockAxiosInstance.post).toHaveBeenCalled();
     });
 
-    test('logout debe limpiar localStorage', () => {
+    test('logout debe limpiar localStorage', async () => {
       // Arrange
       window.localStorage.getItem.mockReturnValue('token');
+      // Limpiar mocks antes del test
+      window.localStorage.removeItem.mockClear();
+      // Mock de la llamada POST a logout
+      mockAxiosInstance.post.mockResolvedValue({ data: {} });
 
       // Act
-      authService.logout();
+      await authService.logout();
 
-      // Assert
+      // Assert - logout limpia localStorage en el bloque finally
       expect(window.localStorage.removeItem).toHaveBeenCalledWith('token');
       expect(window.localStorage.removeItem).toHaveBeenCalledWith('user');
     });
