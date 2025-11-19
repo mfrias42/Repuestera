@@ -23,7 +23,10 @@
     "build": "react-scripts build",
     "test": "react-scripts test --watchAll=false --coverage --ci",
     "test:watch": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:headless": "cypress run --headless --reporter junit --reporter-options 'mochaFile=cypress/results/results.xml'"
   },
   "jest": {
     "transformIgnorePatterns": [
@@ -55,6 +58,7 @@
     ]
   },
   "devDependencies": {
+    "cypress": "^15.7.0",
     "jest-junit": "^16.0.0"
   }
 }

@@ -23,6 +23,11 @@ variables:
   webAppNameBackendProd: 'repuestera-api-prod'
   webAppNameFrontendProd: 'repuestera-web-prod'
   apiUrlProd: 'https://repuestera-api-prod.azurewebsites.net/api'
+  
+  # Quality Gates - TP07
+  minCoveragePercentage: 70
+  sonarCloudOrganization: 'manufrias42' # Actualizar con tu organización de SonarCloud
+  sonarCloudProjectKey: 'repuestera' # Actualizar con tu project key de SonarCloud
 
 stages:
 - stage: Build
@@ -69,6 +74,44 @@ stages:
         reportDirectory: 'backend/coverage'
         failIfCoverageEmpty: false
       displayName: 'Publicar coverage del backend'
+
+    - script: |
+        # Verificar que el coverage sea >= 70%
+        COVERAGE=$(node -e "const fs=require('fs'); const data=fs.readFileSync('backend/coverage/lcov.info','utf8'); const match=data.match(/^LF:(\d+)\nLH:(\d+)/m); if(match){const pct=(match[2]/match[1]*100).toFixed(2); console.log(pct); process.exit(pct < $(minCoveragePercentage) ? 1 : 0);} else {console.log('0'); process.exit(1);}")
+        echo "Coverage actual: ${COVERAGE}%"
+        echo "Coverage mínimo requerido: $(minCoveragePercentage)%"
+        if (( $(echo "$COVERAGE < $(minCoveragePercentage)" | bc -l) )); then
+          echo "##[error]Coverage del backend (${COVERAGE}%) es menor al mínimo requerido ($(minCoveragePercentage)%)"
+          exit 1
+        fi
+      displayName: 'Quality Gate: Verificar coverage backend >= 70%'
+      continueOnError: false
+
+    - task: SonarCloudPrepare@1
+      condition: always()
+      inputs:
+        SonarCloud: 'SonarCloud' # Service connection name
+        organization: '$(sonarCloudOrganization)'
+        scannerMode: 'CLI'
+        configMode: 'manual'
+        cliProjectKey: '$(sonarCloudProjectKey)-backend'
+        cliProjectName: 'Repuestera Backend'
+        cliSources: 'backend'
+        extraProperties: |
+          sonar.javascript.lcov.reportPaths=backend/coverage/lcov.info
+          sonar.coverage.exclusions=**/__tests__/**,**/node_modules/**,**/scripts/**,**/coverage/**,server.js,jest.config.js
+          sonar.test.exclusions=**/node_modules/**
+      displayName: 'SonarCloud: Preparar análisis backend'
+
+    - task: SonarCloudAnalyze@1
+      condition: always()
+      displayName: 'SonarCloud: Ejecutar análisis backend'
+
+    - task: SonarCloudPublish@1
+      condition: always()
+      inputs:
+        pollingTimeoutSec: '300'
+      displayName: 'SonarCloud: Publicar resultados backend'
 
     - task: ArchiveFiles@2
       inputs:
@@ -132,6 +175,44 @@ stages:
         reportDirectory: 'frontend/coverage'
         failIfCoverageEmpty: false
       displayName: 'Publicar coverage del frontend'
+
+    - script: |
+        # Verificar que el coverage sea >= 70%
+        COVERAGE=$(node -e "const fs=require('fs'); const data=fs.readFileSync('frontend/coverage/lcov.info','utf8'); const match=data.match(/^LF:(\d+)\nLH:(\d+)/m); if(match){const pct=(match[2]/match[1]*100).toFixed(2); console.log(pct); process.exit(pct < $(minCoveragePercentage) ? 1 : 0);} else {console.log('0'); process.exit(1);}")
+        echo "Coverage actual: ${COVERAGE}%"
+        echo "Coverage mínimo requerido: $(minCoveragePercentage)%"
+        if (( $(echo "$COVERAGE < $(minCoveragePercentage)" | bc -l) )); then
+          echo "##[error]Coverage del frontend (${COVERAGE}%) es menor al mínimo requerido ($(minCoveragePercentage)%)"
+          exit 1
+        fi
+      displayName: 'Quality Gate: Verificar coverage frontend >= 70%'
+      continueOnError: false
+
+    - task: SonarCloudPrepare@1
+      condition: always()
+      inputs:
+        SonarCloud: 'SonarCloud'
+        organization: '$(sonarCloudOrganization)'
+        scannerMode: 'CLI'
+        configMode: 'manual'
+        cliProjectKey: '$(sonarCloudProjectKey)-frontend'
+        cliProjectName: 'Repuestera Frontend'
+        cliSources: 'frontend/src'
+        extraProperties: |
+          sonar.javascript.lcov.reportPaths=frontend/coverage/lcov.info
+          sonar.coverage.exclusions=**/__tests__/**,**/node_modules/**,**/coverage/**,**/*.test.js,setupTests.js,reportWebVitals.js
+          sonar.test.exclusions=**/node_modules/**
+      displayName: 'SonarCloud: Preparar análisis frontend'
+
+    - task: SonarCloudAnalyze@1
+      condition: always()
+      displayName: 'SonarCloud: Ejecutar análisis frontend'
+
+    - task: SonarCloudPublish@1
+      condition: always()
+      inputs:
+        pollingTimeoutSec: '300'
+      displayName: 'SonarCloud: Publicar resultados frontend'
 
     - script: |
         cd frontend
@@ -201,13 +282,108 @@ stages:
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del frontend Producción'
 
+  # Job 4: Pruebas E2E con Cypress - TP07
+  - job: E2ETests
+    displayName: 'Pruebas E2E con Cypress'
+    pool:
+      vmImage: 'ubuntu-latest'
+    dependsOn: 
+      - BuildBackend
+      - BuildFrontendQA
+    condition: succeeded()
+    
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: $(nodeVersion)
+      displayName: 'Instalar Node.js $(nodeVersion)'
+
+    - script: |
+        cd frontend
+        npm install
+      displayName: 'Instalar dependencias del frontend'
+
+    - script: |
+        cd backend
+        npm install --production=false
+      displayName: 'Instalar dependencias del backend'
+
+    - script: |
+        # Iniciar backend en background
+        cd backend
+        npm start &
+        BACKEND_PID=$!
+        echo "Backend iniciado con PID: $BACKEND_PID"
+        sleep 10
+        # Verificar que el backend esté corriendo
+        curl -f http://localhost:8000/api/health || exit 1
+      displayName: 'Iniciar backend para pruebas E2E'
+      continueOnError: false
+
+    - script: |
+        # Iniciar frontend en background
+        cd frontend
+        npm start &
+        FRONTEND_PID=$!
+        echo "Frontend iniciado con PID: $FRONTEND_PID"
+        sleep 15
+        # Verificar que el frontend esté corriendo
+        curl -f http://localhost:3000 || exit 1
+      displayName: 'Iniciar frontend para pruebas E2E'
+      continueOnError: false
+
+    - script: |
+        cd frontend
+        npm run cypress:run:headless
+      displayName: 'Ejecutar pruebas E2E con Cypress'
+      continueOnError: false
+      env:
+        CYPRESS_baseUrl: 'http://localhost:3000'
+        CYPRESS_apiUrl: 'http://localhost:8000/api'
+
+    - task: PublishTestResults@2
+      condition: always()
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: 'frontend/cypress/results/*.xml'
+        testRunTitle: 'Cypress E2E Tests'
+        failTaskOnFailedTests: true
+      displayName: 'Publicar resultados de pruebas E2E'
+
 # ============================================================================
 # STAGE QA - Despliegue Automático para Testing
 # ============================================================================
-- stage: DeployQA
-  displayName: '🧪 QA Environment'
+- stage: QualityGates
+  displayName: '🔍 Quality Gates - TP07'
   dependsOn: Build
   condition: succeeded()
+  
+  jobs:
+  - job: VerifyQualityGates
+    displayName: 'Verificar Quality Gates'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - script: |
+        echo "##[section]Verificando Quality Gates"
+        echo "Coverage mínimo requerido: $(minCoveragePercentage)%"
+        echo "SonarCloud Organization: $(sonarCloudOrganization)"
+        echo "SonarCloud Project Key: $(sonarCloudProjectKey)"
+        echo "✅ Quality Gates configurados correctamente"
+      displayName: 'Verificar configuración de Quality Gates'
+
+- stage: DeployQA
+  displayName: '🧪 QA Environment'
+  dependsOn: 
+    - Build
+    - QualityGates
+  condition: |
+    and(
+      succeeded(),
+      eq(dependencies.Build.result, 'Succeeded'),
+      eq(dependencies.QualityGates.result, 'Succeeded')
+    )
   
   variables:
     NODE_ENV: 'qa'
@@ -353,8 +529,15 @@ stages:
 # ============================================================================
 - stage: DeployProduction
   displayName: '🚀 Production Environment'
-  dependsOn: DeployQA
-  condition: succeeded()
+  dependsOn: 
+    - DeployQA
+    - QualityGates
+  condition: |
+    and(
+      succeeded(),
+      eq(dependencies.DeployQA.result, 'Succeeded'),
+      eq(dependencies.QualityGates.result, 'Succeeded')
+    )
   
   variables:
     NODE_ENV: 'production'
