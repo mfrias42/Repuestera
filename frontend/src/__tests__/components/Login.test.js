@@ -19,12 +19,15 @@ const mockAuthContextValue = {
   isAuthenticated: false
 };
 
-// Mock de useNavigate
+// Mock de useNavigate ANTES de importar
 const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate
-}));
+jest.mock('react-router-dom', () => {
+  const actual = jest.requireActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate
+  };
+});
 
 // Wrapper para proporcionar contexto
 const LoginWithContext = () => (
