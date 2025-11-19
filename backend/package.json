@@ -15,6 +15,8 @@
     "add-qa-admin": "node scripts/addQAAdmin.js",
     "verify-qa-tables": "node scripts/verifyQATables.js",
     "fix-qa-roles": "node scripts/fixQARoles.js",
+    "check-qa-structure": "node scripts/checkQADatabaseStructure.js",
+    "fix-qa-structure": "node scripts/fixQAStructure.js",
     "create-admin": "USE_SQLITE=true node scripts/addAdminToSQLite.js",
     "dev-utils": "node scripts/dev-utils.js",
     "clean-db": "node scripts/dev-utils.js clean-db",
