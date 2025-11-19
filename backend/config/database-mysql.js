@@ -147,7 +147,8 @@ async function initializeTables() {
         telefono VARCHAR(20),
         direccion TEXT,
         fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        activo BOOLEAN DEFAULT TRUE
+        activo BOOLEAN DEFAULT TRUE,
+        INDEX idx_email (email)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
@@ -159,10 +160,53 @@ async function initializeTables() {
         apellido VARCHAR(100) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
+        rol ENUM('admin', 'super_admin') DEFAULT 'admin',
         fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        activo BOOLEAN DEFAULT TRUE
+        ultimo_acceso TIMESTAMP NULL,
+        activo BOOLEAN DEFAULT TRUE,
+        INDEX idx_email (email)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+    
+    // Agregar columna rol si no existe (para tablas existentes)
+    try {
+      const [columns] = await executeQuery(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'administradores' 
+        AND COLUMN_NAME = 'rol'
+      `);
+      if (columns.length === 0) {
+        await executeQuery(`
+          ALTER TABLE administradores 
+          ADD COLUMN rol ENUM('admin', 'super_admin') DEFAULT 'admin'
+        `);
+        console.log('✅ Columna rol agregada a administradores');
+      }
+    } catch (err) {
+      console.warn('⚠️  No se pudo agregar columna rol:', err.message);
+    }
+    
+    // Agregar columna ultimo_acceso si no existe
+    try {
+      const [columns] = await executeQuery(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'administradores' 
+        AND COLUMN_NAME = 'ultimo_acceso'
+      `);
+      if (columns.length === 0) {
+        await executeQuery(`
+          ALTER TABLE administradores 
+          ADD COLUMN ultimo_acceso TIMESTAMP NULL
+        `);
+        console.log('✅ Columna ultimo_acceso agregada a administradores');
+      }
+    } catch (err) {
+      console.warn('⚠️  No se pudo agregar columna ultimo_acceso:', err.message);
+    }
 
     // Crear tabla de categorías
     await executeQuery(`
@@ -187,14 +231,61 @@ async function initializeTables() {
         codigo_producto VARCHAR(50) UNIQUE,
         marca VARCHAR(100),
         modelo VARCHAR(100),
-        año_vehiculo VARCHAR(20),
-        imagen_url VARCHAR(500),
+        año_desde INT,
+        año_hasta INT,
+        imagen VARCHAR(500),
         activo BOOLEAN DEFAULT TRUE,
         fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (categoria_id) REFERENCES categorias(id) ON DELETE SET NULL
+        FOREIGN KEY (categoria_id) REFERENCES categorias(id) ON DELETE SET NULL,
+        INDEX idx_categoria (categoria_id),
+        INDEX idx_activo (activo),
+        INDEX idx_codigo (codigo_producto)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+    
+    // Agregar columnas año_desde y año_hasta si no existen
+    try {
+      const [columns] = await executeQuery(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'productos' 
+        AND COLUMN_NAME IN ('año_desde', 'año_hasta')
+      `);
+      const existingColumns = columns.map(c => c.COLUMN_NAME);
+      if (!existingColumns.includes('año_desde')) {
+        await executeQuery(`ALTER TABLE productos ADD COLUMN año_desde INT`);
+        console.log('✅ Columna año_desde agregada a productos');
+      }
+      if (!existingColumns.includes('año_hasta')) {
+        await executeQuery(`ALTER TABLE productos ADD COLUMN año_hasta INT`);
+        console.log('✅ Columna año_hasta agregada a productos');
+      }
+    } catch (err) {
+      console.warn('⚠️  No se pudieron agregar columnas de año:', err.message);
+    }
+    
+    // Renombrar imagen_url a imagen si existe imagen_url y no existe imagen
+    try {
+      const [columns] = await executeQuery(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'productos' 
+        AND COLUMN_NAME IN ('imagen', 'imagen_url')
+      `);
+      const columnNames = columns.map(c => c.COLUMN_NAME);
+      if (columnNames.includes('imagen_url') && !columnNames.includes('imagen')) {
+        await executeQuery(`
+          ALTER TABLE productos 
+          CHANGE COLUMN imagen_url imagen VARCHAR(500)
+        `);
+        console.log('✅ Columna imagen_url renombrada a imagen');
+      }
+    } catch (err) {
+      console.warn('⚠️  No se pudo renombrar columna imagen:', err.message);
+    }
 
     // Crear índices para mejor rendimiento (MySQL no soporta IF NOT EXISTS para índices)
     try {
