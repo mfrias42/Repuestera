@@ -46,9 +46,17 @@ stages:
     
     - script: |
         cd backend
-        npm run test
-      displayName: 'Ejecutar pruebas del backend'
+        npm run test -- --coverage --ci
+      displayName: 'Ejecutar pruebas unitarias del backend'
       continueOnError: false
+    
+    - task: PublishTestResults@2
+      condition: always()
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: 'backend/coverage/junit.xml'
+        failTaskOnFailedTests: false
+      displayName: 'Publicar resultados de tests del backend'
 
     - task: ArchiveFiles@2
       inputs:
@@ -80,6 +88,12 @@ stages:
     - script: |
         cd frontend
         npm install
+        npm test -- --watchAll=false --coverage --ci
+      displayName: 'Ejecutar pruebas del frontend'
+      continueOnError: false
+
+    - script: |
+        cd frontend
         npm run build
       displayName: 'Instalar dependencias y construir para QA'
       env:
