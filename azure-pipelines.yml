@@ -337,9 +337,9 @@ stages:
       - BuildFrontendQA
     condition: succeeded()
     
-          steps:
+    steps:
     - task: NodeTool@0
-            inputs:
+      inputs:
         versionSpec: $(nodeVersion)
       displayName: 'Instalar Node.js $(nodeVersion)'
 
@@ -368,8 +368,8 @@ stages:
           if [ $i -eq 30 ]; then
             echo "❌ Backend no respondió después de 30 intentos"
             cat backend.log
-                  exit 1
-                fi
+            exit 1
+          fi
           sleep 2
         done
       displayName: 'Iniciar backend para pruebas E2E'
@@ -390,8 +390,8 @@ stages:
           if [ $i -eq 30 ]; then
             echo "❌ Frontend no respondió después de 30 intentos"
             cat frontend.log
-                  exit 1
-                fi
+            exit 1
+          fi
           sleep 2
         done
       displayName: 'Iniciar frontend para pruebas E2E'
@@ -409,7 +409,7 @@ stages:
 
     - task: PublishTestResults@2
       condition: always()
-            inputs:
+      inputs:
         testResultsFormat: 'JUnit'
         testResultsFiles: 'cypress/results/*.xml'
         testRunTitle: 'Cypress E2E Tests'
@@ -554,14 +554,14 @@ stages:
     strategy:
       runOnce:
         deploy:
-    steps:
+          steps:
           - download: current
             artifact: frontend-qa-drop
             displayName: 'Download Frontend QA Artifact'
             
           - task: AzureWebApp@1
-      inputs:
-        azureSubscription: $(azureSubscription)
+            inputs:
+              azureSubscription: $(azureSubscription)
               appType: 'webAppLinux'
               appName: $(webAppNameFrontendQA)
               resourceGroupName: $(resourceGroupName)
@@ -571,8 +571,8 @@ stages:
             displayName: 'Deploy Frontend to QA'
           
           - task: AzureAppServiceSettings@1
-      inputs:
-        azureSubscription: $(azureSubscription)
+            inputs:
+              azureSubscription: $(azureSubscription)
               appName: $(webAppNameFrontendQA)
               resourceGroupName: $(resourceGroupName)
               appSettings: |
