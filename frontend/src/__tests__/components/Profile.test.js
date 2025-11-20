@@ -1,15 +1,27 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import Profile from '../../pages/Profile';
-import AuthContext from '../../context/AuthContext';
-import { userService } from '../../services/api';
+// Mock de react-router-dom ANTES de los imports
+jest.mock('react-router-dom', () => {
+  return {
+    BrowserRouter: ({ children }) => children,
+    Routes: ({ children }) => children,
+    Route: ({ element }) => element,
+    Navigate: () => null,
+    Link: ({ children, to }) => <a href={to}>{children}</a>,
+    useNavigate: () => jest.fn()
+  };
+});
 
 jest.mock('../../services/api', () => ({
   userService: {
     updateProfile: jest.fn()
   }
 }));
+
+import React from 'react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import Profile from '../../pages/Profile';
+import AuthContext from '../../context/AuthContext';
+import { userService } from '../../services/api';
 
 const mockUpdateUser = jest.fn();
 
@@ -49,12 +61,14 @@ describe('Profile Component', () => {
     fecha_registro: '2024-01-01'
   };
 
-  it('debe renderizar el perfil del usuario', () => {
+  it('debe renderizar el perfil del usuario', async () => {
     renderWithProviders(mockUser);
     
-    expect(screen.getByText('Juan')).toBeInTheDocument();
-    expect(screen.getByText('Pérez')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('juan@test.com')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Juan')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Pérez')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('juan@test.com')).toBeInTheDocument();
+    });
   });
 
   it('debe mostrar error cuando no hay usuario', () => {
@@ -63,23 +77,36 @@ describe('Profile Component', () => {
     expect(screen.getByText(/no se pudo cargar la información del usuario/i)).toBeInTheDocument();
   });
 
-  it('debe activar modo edición cuando se hace clic en Editar', () => {
+  it('debe activar modo edición cuando se hace clic en Editar', async () => {
     renderWithProviders(mockUser);
     
     const editButton = screen.getByRole('button', { name: /editar/i });
-    fireEvent.click(editButton);
+    await act(async () => {
+      fireEvent.click(editButton);
+    });
     
-    expect(screen.getByRole('button', { name: /guardar/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /cancelar/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /guardar/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /cancelar/i })).toBeInTheDocument();
+    });
   });
 
-  it('debe actualizar campos cuando se edita', () => {
+  it('debe actualizar campos cuando se edita', async () => {
     renderWithProviders(mockUser);
     
-    fireEvent.click(screen.getByRole('button', { name: /editar/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /editar/i }));
+    });
+    
+    await waitFor(() => {
+      const nombreInput = screen.getByLabelText(/nombre/i);
+      expect(nombreInput).toBeInTheDocument();
+    });
     
     const nombreInput = screen.getByLabelText(/nombre/i);
-    fireEvent.change(nombreInput, { target: { value: 'Pedro' } });
+    await act(async () => {
+      fireEvent.change(nombreInput, { target: { value: 'Pedro' } });
+    });
     
     expect(nombreInput.value).toBe('Pedro');
   });
@@ -93,12 +120,23 @@ describe('Profile Component', () => {
     
     renderWithProviders(mockUser);
     
-    fireEvent.click(screen.getByRole('button', { name: /editar/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /editar/i }));
+    });
+    
+    await waitFor(() => {
+      const nombreInput = screen.getByLabelText(/nombre/i);
+      expect(nombreInput).toBeInTheDocument();
+    });
     
     const nombreInput = screen.getByLabelText(/nombre/i);
-    fireEvent.change(nombreInput, { target: { value: 'Pedro' } });
+    await act(async () => {
+      fireEvent.change(nombreInput, { target: { value: 'Pedro' } });
+    });
     
-    fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
+    });
     
     await waitFor(() => {
       expect(userService.updateProfile).toHaveBeenCalledWith({
@@ -111,17 +149,36 @@ describe('Profile Component', () => {
     });
   });
 
-  it('debe cancelar edición cuando se hace clic en Cancelar', () => {
+  it('debe cancelar edición cuando se hace clic en Cancelar', async () => {
     renderWithProviders(mockUser);
     
-    fireEvent.click(screen.getByRole('button', { name: /editar/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /editar/i }));
+    });
+    
+    await waitFor(() => {
+      const nombreInput = screen.getByLabelText(/nombre/i);
+      expect(nombreInput).toBeInTheDocument();
+    });
     
     const nombreInput = screen.getByLabelText(/nombre/i);
-    fireEvent.change(nombreInput, { target: { value: 'Pedro' } });
+    await act(async () => {
+      fireEvent.change(nombreInput, { target: { value: 'Pedro' } });
+    });
     
-    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }));
+    // Verificar que el valor cambió
+    expect(nombreInput.value).toBe('Pedro');
     
-    expect(nombreInput.value).toBe('Juan');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /cancelar/i }));
+    });
+    
+    // Esperar a que el componente se actualice después de cancelar
+    await waitFor(() => {
+      // Después de cancelar, el campo debería volver a estar deshabilitado y mostrar el valor original
+      const nombreInputAfterCancel = screen.getByLabelText(/nombre/i);
+      expect(nombreInputAfterCancel.value).toBe('Juan');
+    }, { timeout: 2000 });
   });
 
   it('debe mostrar error cuando falla la actualización', async () => {
@@ -131,8 +188,17 @@ describe('Profile Component', () => {
     
     renderWithProviders(mockUser);
     
-    fireEvent.click(screen.getByRole('button', { name: /editar/i }));
-    fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /editar/i }));
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /guardar/i })).toBeInTheDocument();
+    });
+    
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
+    });
     
     await waitFor(() => {
       expect(screen.getByText(/error al actualizar/i)).toBeInTheDocument();
@@ -150,9 +216,19 @@ describe('Profile Component', () => {
     
     renderWithProviders(mockUser);
     
-    fireEvent.click(screen.getByRole('button', { name: /editar/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /editar/i }));
+    });
+    
+    await waitFor(() => {
+      const saveButton = screen.getByRole('button', { name: /guardar/i });
+      expect(saveButton).toBeInTheDocument();
+    });
+    
     const saveButton = screen.getByRole('button', { name: /guardar/i });
-    fireEvent.click(saveButton);
+    await act(async () => {
+      fireEvent.click(saveButton);
+    });
     
     expect(saveButton).toBeDisabled();
   });

@@ -1,3 +1,16 @@
+// Mock de react-router-dom ANTES de los imports
+jest.mock('react-router-dom', () => {
+  return {
+    BrowserRouter: ({ children }) => children,
+    MemoryRouter: ({ children }) => children,
+    Routes: ({ children }) => children,
+    Route: ({ element }) => element,
+    Navigate: () => null,
+    Link: ({ children, to }) => <a href={to}>{children}</a>,
+    useNavigate: () => jest.fn()
+  };
+});
+
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="Backend Tests" tests="83" failures="0" errors="0" time="0.205">
-  <testsuite name="__tests__/unit/models/User.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-19T22:19:01" time="0.076" tests="21">
+<testsuites name="Backend Tests" tests="83" failures="0" errors="0" time="0.218">
+  <testsuite name="__tests__/unit/models/User.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T18:11:15" time="0.084" tests="21">
     <testcase classname="User Model › Constructor" name="debe crear una instancia de User con los datos proporcionados" time="0.001">
     </testcase>
-    <testcase classname="User Model › findById" name="debe retornar un usuario cuando existe" time="0">
+    <testcase classname="User Model › findById" name="debe retornar un usuario cuando existe" time="0.001">
     </testcase>
-    <testcase classname="User Model › findById" name="debe retornar null cuando el usuario no existe" time="0.001">
+    <testcase classname="User Model › findById" name="debe retornar null cuando el usuario no existe" time="0">
     </testcase>
     <testcase classname="User Model › findById" name="debe manejar errores de base de datos" time="0.001">
     </testcase>
@@ -21,7 +21,7 @@
     </testcase>
     <testcase classname="User Model › verifyPassword" name="debe retornar false cuando la contraseña es incorrecta" time="0">
     </testcase>
-    <testcase classname="User Model › update" name="debe actualizar campos permitidos correctamente" time="0">
+    <testcase classname="User Model › update" name="debe actualizar campos permitidos correctamente" time="0.001">
     </testcase>
     <testcase classname="User Model › update" name="debe lanzar error si no hay campos válidos para actualizar" time="0">
     </testcase>
@@ -37,31 +37,31 @@
     </testcase>
     <testcase classname="User Model › findAll" name="debe usar valores por defecto para limit y offset" time="0">
     </testcase>
-    <testcase classname="User Model › count" name="debe retornar el número total de usuarios activos" time="0.001">
+    <testcase classname="User Model › count" name="debe retornar el número total de usuarios activos" time="0">
     </testcase>
     <testcase classname="User Model › search" name="debe buscar usuarios por término" time="0">
     </testcase>
     <testcase classname="User Model › toJSON" name="debe retornar objeto sin password" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="__tests__/unit/middleware/auth.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-19T22:19:01" time="0.033" tests="16">
-    <testcase classname="Auth Middleware › verifyToken" name="debe permitir acceso con token válido" time="0.001">
+  <testsuite name="__tests__/unit/middleware/auth.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T18:11:15" time="0.037" tests="16">
+    <testcase classname="Auth Middleware › verifyToken" name="debe permitir acceso con token válido" time="0">
     </testcase>
-    <testcase classname="Auth Middleware › verifyToken" name="debe rechazar acceso sin token" time="0">
+    <testcase classname="Auth Middleware › verifyToken" name="debe rechazar acceso sin token" time="0.001">
     </testcase>
     <testcase classname="Auth Middleware › verifyToken" name="debe rechazar token expirado" time="0">
     </testcase>
     <testcase classname="Auth Middleware › verifyToken" name="debe rechazar token inválido" time="0">
     </testcase>
-    <testcase classname="Auth Middleware › verifyAdmin" name="debe permitir acceso cuando el admin existe y está activo" time="0.011">
+    <testcase classname="Auth Middleware › verifyAdmin" name="debe permitir acceso cuando el admin existe y está activo" time="0.012">
     </testcase>
-    <testcase classname="Auth Middleware › verifyAdmin" name="debe rechazar acceso cuando el usuario no es admin" time="0.001">
+    <testcase classname="Auth Middleware › verifyAdmin" name="debe rechazar acceso cuando el usuario no es admin" time="0.002">
     </testcase>
     <testcase classname="Auth Middleware › verifyAdmin" name="debe rechazar acceso cuando el admin no existe" time="0.001">
     </testcase>
-    <testcase classname="Auth Middleware › verifyAdmin" name="debe asignar rol por defecto si es null" time="0">
+    <testcase classname="Auth Middleware › verifyAdmin" name="debe asignar rol por defecto si es null" time="0.001">
     </testcase>
-    <testcase classname="Auth Middleware › requirePermission" name="debe permitir acceso cuando el admin tiene el permiso" time="0">
+    <testcase classname="Auth Middleware › requirePermission" name="debe permitir acceso cuando el admin tiene el permiso" time="0.001">
     </testcase>
     <testcase classname="Auth Middleware › requirePermission" name="debe rechazar acceso cuando el admin no tiene el permiso" time="0.001">
     </testcase>
@@ -71,14 +71,14 @@
     </testcase>
     <testcase classname="Auth Middleware › requireSuperAdmin" name="debe rechazar acceso cuando no es super_admin" time="0">
     </testcase>
-    <testcase classname="Auth Middleware › generateAdminToken" name="debe generar token para administrador" time="0.001">
+    <testcase classname="Auth Middleware › generateAdminToken" name="debe generar token para administrador" time="0">
     </testcase>
     <testcase classname="Auth Middleware › generateAdminToken" name="debe usar rol por defecto si no existe" time="0">
     </testcase>
-    <testcase classname="Auth Middleware › generateUserToken" name="debe generar token para usuario" time="0">
+    <testcase classname="Auth Middleware › generateUserToken" name="debe generar token para usuario" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="__tests__/unit/models/Admin.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-19T22:19:01" time="0.019" tests="19">
+  <testsuite name="__tests__/unit/models/Admin.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T18:11:15" time="0.02" tests="19">
     <testcase classname="Admin Model › Constructor" name="debe crear una instancia de Admin con los datos proporcionados" time="0">
     </testcase>
     <testcase classname="Admin Model › Constructor" name="debe asignar rol por defecto &quot;admin&quot; si no se proporciona" time="0">
@@ -89,7 +89,7 @@
     </testcase>
     <testcase classname="Admin Model › canPerformAction" name="debe retornar true para permisos de super_admin" time="0">
     </testcase>
-    <testcase classname="Admin Model › canPerformAction" name="debe retornar true solo para permisos básicos de admin" time="0">
+    <testcase classname="Admin Model › canPerformAction" name="debe retornar true solo para permisos básicos de admin" time="0.001">
     </testcase>
     <testcase classname="Admin Model › canPerformAction" name="debe retornar false para acciones no permitidas" time="0">
     </testcase>
@@ -97,11 +97,11 @@
     </testcase>
     <testcase classname="Admin Model › findById" name="debe retornar un administrador cuando existe" time="0">
     </testcase>
-    <testcase classname="Admin Model › findById" name="debe retornar null cuando el administrador no existe" time="0.001">
+    <testcase classname="Admin Model › findById" name="debe retornar null cuando el administrador no existe" time="0">
     </testcase>
     <testcase classname="Admin Model › findByEmail" name="debe retornar un administrador cuando el email existe" time="0">
     </testcase>
-    <testcase classname="Admin Model › create" name="debe crear un nuevo administrador correctamente" time="0">
+    <testcase classname="Admin Model › create" name="debe crear un nuevo administrador correctamente" time="0.001">
     </testcase>
     <testcase classname="Admin Model › create" name="debe usar rol &quot;admin&quot; por defecto si no se proporciona" time="0">
     </testcase>
@@ -111,38 +111,14 @@
     </testcase>
     <testcase classname="Admin Model › update" name="debe rechazar campos no permitidos" time="0.004">
     </testcase>
-    <testcase classname="Admin Model › getStats" name="debe retornar estadísticas del administrador" time="0.001">
+    <testcase classname="Admin Model › getStats" name="debe retornar estadísticas del administrador" time="0">
     </testcase>
     <testcase classname="Admin Model › toJSON" name="debe retornar objeto sin password" time="0">
     </testcase>
     <testcase classname="Admin Model › toJSON" name="debe asignar rol por defecto si es null" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="__tests__/unit/models/Product.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-19T22:19:01" time="0.02" tests="11">
-    <testcase classname="Product Model › Constructor" name="debe crear una instancia de Product con los datos proporcionados" time="0">
-    </testcase>
-    <testcase classname="Product Model › findById" name="debe retornar un producto cuando existe" time="0">
-    </testcase>
-    <testcase classname="Product Model › findById" name="debe retornar null cuando el producto no existe" time="0">
-    </testcase>
-    <testcase classname="Product Model › findByCode" name="debe retornar un producto cuando el código existe" time="0">
-    </testcase>
-    <testcase classname="Product Model › findByCode" name="debe retornar null cuando el código no existe" time="0">
-    </testcase>
-    <testcase classname="Product Model › create" name="debe crear un nuevo producto correctamente" time="0">
-    </testcase>
-    <testcase classname="Product Model › create" name="debe manejar valores null/undefined correctamente" time="0">
-    </testcase>
-    <testcase classname="Product Model › create" name="debe lanzar error si no se puede crear el producto" time="0.006">
-    </testcase>
-    <testcase classname="Product Model › deactivate" name="debe desactivar un producto correctamente" time="0">
-    </testcase>
-    <testcase classname="Product Model › update" name="debe actualizar campos permitidos correctamente" time="0">
-    </testcase>
-    <testcase classname="Product Model › getLowStockProducts" name="debe retornar productos con stock bajo" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="__tests__/unit/models/Category.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-19T22:19:02" time="0.019" tests="16">
+  <testsuite name="__tests__/unit/models/Category.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T18:11:15" time="0.019" tests="16">
     <testcase classname="Category Model › Constructor" name="debe crear una instancia de Category con los datos proporcionados" time="0">
     </testcase>
     <testcase classname="Category Model › Constructor" name="debe inicializar productos_count en 0 si no se proporciona" time="0">
@@ -174,6 +150,30 @@
     <testcase classname="Category Model › getStats" name="debe retornar estadísticas de la categoría" time="0">
     </testcase>
     <testcase classname="Category Model › toJSON" name="debe retornar objeto JSON con campos correctos" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/models/Product.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T18:11:15" time="0.022" tests="11">
+    <testcase classname="Product Model › Constructor" name="debe crear una instancia de Product con los datos proporcionados" time="0.001">
+    </testcase>
+    <testcase classname="Product Model › findById" name="debe retornar un producto cuando existe" time="0">
+    </testcase>
+    <testcase classname="Product Model › findById" name="debe retornar null cuando el producto no existe" time="0">
+    </testcase>
+    <testcase classname="Product Model › findByCode" name="debe retornar un producto cuando el código existe" time="0">
+    </testcase>
+    <testcase classname="Product Model › findByCode" name="debe retornar null cuando el código no existe" time="0">
+    </testcase>
+    <testcase classname="Product Model › create" name="debe crear un nuevo producto correctamente" time="0">
+    </testcase>
+    <testcase classname="Product Model › create" name="debe manejar valores null/undefined correctamente" time="0.001">
+    </testcase>
+    <testcase classname="Product Model › create" name="debe lanzar error si no se puede crear el producto" time="0.005">
+    </testcase>
+    <testcase classname="Product Model › deactivate" name="debe desactivar un producto correctamente" time="0">
+    </testcase>
+    <testcase classname="Product Model › update" name="debe actualizar campos permitidos correctamente" time="0">
+    </testcase>
+    <testcase classname="Product Model › getLowStockProducts" name="debe retornar productos con stock bajo" time="0">
     </testcase>
   </testsuite>
 </testsuites>
