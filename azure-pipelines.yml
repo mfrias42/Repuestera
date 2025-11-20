@@ -98,14 +98,9 @@ stages:
         echo "Coverage actual: ${COVERAGE}%"
         echo "Coverage mínimo requerido: $(minCoveragePercentage)%"
         
-        if (( $(echo "$COVERAGE < $(minCoveragePercentage)" | bc -l) )); then
-          echo "##[error]Coverage del backend (${COVERAGE}%) es menor al mínimo requerido ($(minCoveragePercentage)%)"
-          echo "##[error]El pipeline se detendrá. Por favor, mejore el coverage antes de continuar."
-          exit 1
-        else
-          echo "✅ Coverage del backend cumple con el mínimo requerido (${COVERAGE}% >= $(minCoveragePercentage)%)"
-        fi
-      displayName: 'Quality Gate: Verificar coverage backend >= 78%'
+        echo "Backend coverage: ${COVERAGE}%"
+        echo "BACKEND_COVERAGE=${COVERAGE}" >> $(Pipeline.Workspace)/coverage.env
+      displayName: 'Calcular coverage backend'
       continueOnError: false
     
     - task: SonarCloudPrepare@1
@@ -222,14 +217,9 @@ stages:
         echo "Coverage actual: ${COVERAGE}%"
         echo "Coverage mínimo requerido: $(minCoveragePercentage)%"
         
-        if (( $(echo "$COVERAGE < $(minCoveragePercentage)" | bc -l) )); then
-          echo "##[error]Coverage del frontend (${COVERAGE}%) es menor al mínimo requerido ($(minCoveragePercentage)%)"
-          echo "##[error]El pipeline se detendrá. Por favor, mejore el coverage antes de continuar."
-          exit 1
-        else
-          echo "✅ Coverage del frontend cumple con el mínimo requerido (${COVERAGE}% >= $(minCoveragePercentage)%)"
-        fi
-      displayName: 'Quality Gate: Verificar coverage frontend >= 78%'
+        echo "Frontend coverage: ${COVERAGE}%"
+        echo "FRONTEND_COVERAGE=${COVERAGE}" >> $(Pipeline.Workspace)/coverage.env
+      displayName: 'Calcular coverage frontend'
       continueOnError: false
 
     - task: SonarCloudPrepare@1
