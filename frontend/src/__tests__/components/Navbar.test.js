@@ -2,8 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
-import { AuthContext } from '../../context/AuthContext';
-import { CartContext } from '../../context/CartContext';
+import AuthContext from '../../context/AuthContext';
+import CartContext from '../../context/CartContext';
 
 const mockNavigate = jest.fn();
 const mockLogout = jest.fn();

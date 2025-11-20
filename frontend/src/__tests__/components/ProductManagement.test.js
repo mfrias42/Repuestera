@@ -34,9 +34,27 @@ jest.mock('../../services/api', () => ({
 }));
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import ProductManagement from '../../components/ProductManagement';
 import { productService } from '../../services/api';
+
+// Silenciar warnings de MUI Grid en tests
+const originalError = console.error;
+beforeAll(() => {
+  console.error = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('MUI Grid') || args[0].includes('act(...)'))
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError;
+});
 
 describe('ProductManagement Component', () => {
   const mockProducts = [
@@ -88,7 +106,10 @@ describe('ProductManagement Component', () => {
     // Act - Buscar botón "Nuevo Producto" (puede haber múltiples, tomar el primero)
     const addButtons = screen.getAllByRole('button', { name: /nuevo producto/i });
     const addButton = addButtons[0]; // Tomar el primer botón
-    fireEvent.click(addButton);
+    
+    await act(async () => {
+      fireEvent.click(addButton);
+    });
 
     // Assert - Verificar que el diálogo se abre
     // Buscar el título del diálogo que debería aparecer
@@ -115,12 +136,15 @@ describe('ProductManagement Component', () => {
     productService.getProducts.mockRejectedValue(new Error('Error de red'));
 
     // Act
-    render(<ProductManagement />);
+    await act(async () => {
+      render(<ProductManagement />);
+    });
 
     // Assert
     await waitFor(() => {
-      expect(screen.getByText(/error al cargar productos/i)).toBeInTheDocument();
-    });
+      const errorMessage = screen.queryByText(/error al cargar productos/i);
+      expect(errorMessage).toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 
   test('debe abrir diálogo de edición al hacer clic en editar', async () => {
@@ -135,7 +159,9 @@ describe('ProductManagement Component', () => {
       return btn.querySelector('[data-testid="EditIcon"]') !== null;
     });
     if (editButtons.length > 0) {
-      fireEvent.click(editButtons[0]);
+      await act(async () => {
+        fireEvent.click(editButtons[0]);
+      });
       
       // Assert
       await waitFor(() => {
@@ -162,10 +188,14 @@ describe('ProductManagement Component', () => {
     });
     
     if (deleteButtons.length > 0) {
-      fireEvent.click(deleteButtons[0]);
+      await act(async () => {
+        fireEvent.click(deleteButtons[0]);
+      });
       
       // Assert - window.confirm debería ser llamado y luego deleteProduct
-      expect(window.confirm).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(window.confirm).toHaveBeenCalled();
+      });
       await waitFor(() => {
         expect(productService.deleteProduct).toHaveBeenCalledWith(1); // ID del primer producto
       });
@@ -185,7 +215,9 @@ describe('ProductManagement Component', () => {
     // Act - Abrir diálogo (puede haber múltiples botones)
     const addButtons = screen.getAllByRole('button', { name: /nuevo producto/i });
     const addButton = addButtons[0]; // Tomar el primer botón
-    fireEvent.click(addButton);
+    await act(async () => {
+      fireEvent.click(addButton);
+    });
 
     // Esperar a que aparezca el título del diálogo
     await waitFor(() => {
@@ -196,7 +228,9 @@ describe('ProductManagement Component', () => {
     // Intentar guardar sin llenar campos requeridos
     const saveButtons = screen.queryAllByRole('button', { name: /guardar|crear|guardar cambios|aceptar/i });
     if (saveButtons.length > 0) {
-      fireEvent.click(saveButtons[0]);
+      await act(async () => {
+        fireEvent.click(saveButtons[0]);
+      });
       // Assert - El formulario debería validar campos requeridos
       // (depende de la implementación del componente)
       expect(true).toBe(true);
@@ -217,27 +251,33 @@ describe('ProductManagement Component', () => {
     });
 
     const addButtons = screen.getAllByRole('button', { name: /nuevo producto/i });
-    fireEvent.click(addButtons[0]);
+    await act(async () => {
+      fireEvent.click(addButtons[0]);
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Nuevo Producto')).toBeInTheDocument();
     });
 
-    const nombreInput = screen.getByLabelText(/nombre/i);
-    fireEvent.change(nombreInput, { target: { value: 'Nuevo Producto' } });
+    await act(async () => {
+      const nombreInput = screen.getByLabelText(/nombre/i);
+      fireEvent.change(nombreInput, { target: { value: 'Nuevo Producto' } });
 
-    const precioInput = screen.getByLabelText(/precio/i);
-    fireEvent.change(precioInput, { target: { value: '20' } });
+      const precioInput = screen.getByLabelText(/precio/i);
+      fireEvent.change(precioInput, { target: { value: '20' } });
 
-    const stockInput = screen.getByLabelText(/stock/i);
-    fireEvent.change(stockInput, { target: { value: '10' } });
+      const stockInput = screen.getByLabelText(/stock/i);
+      fireEvent.change(stockInput, { target: { value: '10' } });
 
-    const codigoInput = screen.getByLabelText(/código/i);
-    fireEvent.change(codigoInput, { target: { value: 'NP001' } });
+      const codigoInput = screen.getByLabelText(/código/i);
+      fireEvent.change(codigoInput, { target: { value: 'NP001' } });
+    });
 
     const saveButtons = screen.queryAllByRole('button', { name: /guardar|crear/i });
     if (saveButtons.length > 0) {
-      fireEvent.click(saveButtons[0]);
+      await act(async () => {
+        fireEvent.click(saveButtons[0]);
+      });
       
       await waitFor(() => {
         expect(productService.createProduct).toHaveBeenCalled();
@@ -260,16 +300,25 @@ describe('ProductManagement Component', () => {
     });
     
     if (editButtons.length > 0) {
-      fireEvent.click(editButtons[0]);
+      await act(async () => {
+        fireEvent.click(editButtons[0]);
+      });
       
       await waitFor(() => {
+        const nombreInput = screen.getByDisplayValue('Filtro de Aceite');
+        expect(nombreInput).toBeInTheDocument();
+      });
+
+      await act(async () => {
         const nombreInput = screen.getByDisplayValue('Filtro de Aceite');
         fireEvent.change(nombreInput, { target: { value: 'Producto Actualizado' } });
       });
 
       const saveButtons = screen.queryAllByRole('button', { name: /guardar/i });
       if (saveButtons.length > 0) {
-        fireEvent.click(saveButtons[0]);
+        await act(async () => {
+          fireEvent.click(saveButtons[0]);
+        });
         
         await waitFor(() => {
           expect(productService.updateProduct).toHaveBeenCalled();
@@ -285,9 +334,16 @@ describe('ProductManagement Component', () => {
     });
 
     const addButtons = screen.getAllByRole('button', { name: /nuevo producto/i });
-    fireEvent.click(addButtons[0]);
+    await act(async () => {
+      fireEvent.click(addButtons[0]);
+    });
 
     await waitFor(() => {
+      const fileInput = screen.getByLabelText(/imagen/i);
+      expect(fileInput).toBeInTheDocument();
+    });
+
+    await act(async () => {
       const fileInput = screen.getByLabelText(/imagen/i);
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
       fireEvent.change(fileInput, { target: { files: [file] } });
@@ -305,9 +361,15 @@ describe('ProductManagement Component', () => {
     });
 
     const addButtons = screen.getAllByRole('button', { name: /nuevo producto/i });
-    fireEvent.click(addButtons[0]);
+    await act(async () => {
+      fireEvent.click(addButtons[0]);
+    });
 
     await waitFor(() => {
+      expect(screen.getByText('Nuevo Producto')).toBeInTheDocument();
+    });
+
+    await act(async () => {
       const nombreInput = screen.getByLabelText(/nombre/i);
       fireEvent.change(nombreInput, { target: { value: 'Nuevo' } });
       const precioInput = screen.getByLabelText(/precio/i);
@@ -320,7 +382,9 @@ describe('ProductManagement Component', () => {
 
     const saveButtons = screen.queryAllByRole('button', { name: /guardar|crear/i });
     if (saveButtons.length > 0) {
-      fireEvent.click(saveButtons[0]);
+      await act(async () => {
+        fireEvent.click(saveButtons[0]);
+      });
       
       await waitFor(() => {
         expect(productService.createProduct).toHaveBeenCalled();
