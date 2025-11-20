@@ -107,7 +107,6 @@ stages:
         fi
       displayName: 'Quality Gate: Verificar coverage backend >= 78%'
       continueOnError: false
-      continueOnError: true
     
     - task: SonarCloudPrepare@1
       condition: always()
@@ -232,7 +231,6 @@ stages:
         fi
       displayName: 'Quality Gate: Verificar coverage frontend >= 78%'
       continueOnError: false
-      continueOnError: true
 
     - task: SonarCloudPrepare@1
       condition: always()
