@@ -1,5 +1,5 @@
 // Tests básicos para config/database-mysql.js
-// Solo verificamos que las funciones existen y se pueden llamar
+// Verificar que las funciones existen y se pueden llamar
 
 jest.mock('mysql2/promise', () => ({
   createPool: jest.fn(() => ({
@@ -13,34 +13,32 @@ jest.mock('dotenv', () => ({
   config: jest.fn()
 }));
 
-const {
-  getConnection,
-  testConnection,
-  executeQuery,
-  executeTransaction,
-  closeConnection
-} = require('../../../config/database-mysql');
+const dbModule = require('../../../config/database-mysql');
 
 describe('Database MySQL Config', () => {
   describe('Module exports', () => {
     it('debe exportar getConnection', () => {
-      expect(typeof getConnection).toBe('function');
+      expect(typeof dbModule.getConnection).toBe('function');
     });
 
     it('debe exportar testConnection', () => {
-      expect(typeof testConnection).toBe('function');
+      expect(typeof dbModule.testConnection).toBe('function');
     });
 
     it('debe exportar executeQuery', () => {
-      expect(typeof executeQuery).toBe('function');
+      expect(typeof dbModule.executeQuery).toBe('function');
     });
 
     it('debe exportar executeTransaction', () => {
-      expect(typeof executeTransaction).toBe('function');
+      expect(typeof dbModule.executeTransaction).toBe('function');
+    });
+
+    it('debe exportar initializeTables', () => {
+      expect(typeof dbModule.initializeTables).toBe('function');
     });
 
     it('debe exportar closeConnection', () => {
-      expect(typeof closeConnection).toBe('function');
+      expect(typeof dbModule.closeConnection).toBe('function');
     });
   });
 });

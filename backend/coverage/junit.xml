@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="Backend Tests" tests="167" failures="0" errors="0" time="0.464">
-  <testsuite name="__tests__/unit/middleware/validation.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T19:40:14" time="0.135" tests="23">
-    <testcase classname="Validation Middleware › handleValidationErrors" name="debe continuar si no hay errores de validación" time="0.001">
+<testsuites name="Backend Tests" tests="188" failures="0" errors="0" time="0.47">
+  <testsuite name="__tests__/unit/routes/test-simple.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:39" time="0.121" tests="1">
+    <testcase classname="Test Simple Routes › GET /api/test" name="debe retornar mensaje de prueba" time="0.008">
     </testcase>
-    <testcase classname="Validation Middleware › handleValidationErrors" name="debe retornar 400 si hay errores de validación" time="0.002">
+  </testsuite>
+  <testsuite name="__tests__/unit/middleware/validation.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:39" time="0.07" tests="23">
+    <testcase classname="Validation Middleware › handleValidationErrors" name="debe continuar si no hay errores de validación" time="0">
+    </testcase>
+    <testcase classname="Validation Middleware › handleValidationErrors" name="debe retornar 400 si hay errores de validación" time="0">
     </testcase>
     <testcase classname="Validation Middleware › sanitizeInput" name="debe sanitizar strings eliminando espacios" time="0">
     </testcase>
@@ -11,25 +15,25 @@
     </testcase>
     <testcase classname="Validation Middleware › sanitizeInput" name="debe sanitizar objetos anidados" time="0">
     </testcase>
-    <testcase classname="Validation Middleware › logRequest" name="debe registrar request y response" time="0.023">
+    <testcase classname="Validation Middleware › logRequest" name="debe registrar request y response" time="0.022">
     </testcase>
-    <testcase classname="Validation Middleware › validatePagination" name="debe validar paginación correcta" time="0">
+    <testcase classname="Validation Middleware › validatePagination" name="debe validar paginación correcta" time="0.001">
     </testcase>
     <testcase classname="Validation Middleware › validatePagination" name="debe usar valores por defecto" time="0">
     </testcase>
-    <testcase classname="Validation Middleware › validatePagination" name="debe rechazar página inválida" time="0.001">
+    <testcase classname="Validation Middleware › validatePagination" name="debe rechazar página inválida" time="0">
     </testcase>
-    <testcase classname="Validation Middleware › validatePagination" name="debe rechazar límite inválido" time="0">
+    <testcase classname="Validation Middleware › validatePagination" name="debe rechazar límite inválido" time="0.001">
     </testcase>
     <testcase classname="Validation Middleware › validateNumericId" name="debe validar ID numérico correcto" time="0">
     </testcase>
     <testcase classname="Validation Middleware › validateNumericId" name="debe rechazar ID inválido" time="0">
     </testcase>
-    <testcase classname="Validation Middleware › validateNumericId" name="debe rechazar ID menor a 1" time="0.001">
+    <testcase classname="Validation Middleware › validateNumericId" name="debe rechazar ID menor a 1" time="0">
     </testcase>
     <testcase classname="Validation Middleware › asyncHandler" name="debe manejar función async exitosa" time="0">
     </testcase>
-    <testcase classname="Validation Middleware › asyncHandler" name="debe manejar errores en función async" time="0">
+    <testcase classname="Validation Middleware › asyncHandler" name="debe manejar errores en función async" time="0.001">
     </testcase>
     <testcase classname="Validation Middleware › validateJSON" name="debe continuar si Content-Type es JSON" time="0">
     </testcase>
@@ -37,67 +41,95 @@
     </testcase>
     <testcase classname="Validation Middleware › validateContentType" name="debe aceptar Content-Type permitido" time="0">
     </testcase>
-    <testcase classname="Validation Middleware › validateContentType" name="debe rechazar Content-Type no permitido" time="0.001">
+    <testcase classname="Validation Middleware › validateContentType" name="debe rechazar Content-Type no permitido" time="0">
     </testcase>
     <testcase classname="Validation Middleware › validateContentType" name="debe rechazar si no hay Content-Type" time="0">
     </testcase>
     <testcase classname="Validation Middleware › setCacheControl" name="debe establecer header Cache-Control" time="0">
     </testcase>
-    <testcase classname="Validation Middleware › customCORS" name="debe establecer headers CORS" time="0">
+    <testcase classname="Validation Middleware › customCORS" name="debe establecer headers CORS" time="0.002">
     </testcase>
     <testcase classname="Validation Middleware › customCORS" name="debe responder OPTIONS con 200" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="__tests__/unit/config/database-mysql.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T19:40:14" time="0.022" tests="5">
-    <testcase classname="Database MySQL Config › Module exports" name="debe exportar getConnection" time="0">
+  <testsuite name="__tests__/unit/middleware/auth.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:39" time="0.029" tests="34">
+    <testcase classname="Auth Middleware › verifyToken" name="debe permitir acceso con token válido" time="0.001">
     </testcase>
-    <testcase classname="Database MySQL Config › Module exports" name="debe exportar testConnection" time="0">
+    <testcase classname="Auth Middleware › verifyToken" name="debe rechazar acceso sin token" time="0">
     </testcase>
-    <testcase classname="Database MySQL Config › Module exports" name="debe exportar executeQuery" time="0">
+    <testcase classname="Auth Middleware › verifyToken" name="debe rechazar header sin Bearer" time="0">
     </testcase>
-    <testcase classname="Database MySQL Config › Module exports" name="debe exportar executeTransaction" time="0">
+    <testcase classname="Auth Middleware › verifyToken" name="debe rechazar token vacío después de Bearer" time="0">
     </testcase>
-    <testcase classname="Database MySQL Config › Module exports" name="debe exportar closeConnection" time="0">
+    <testcase classname="Auth Middleware › verifyToken" name="debe rechazar token expirado" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyToken" name="debe rechazar token inválido" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyToken" name="debe manejar otros errores de verificación" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyUser" name="debe permitir acceso cuando el usuario existe y está activo" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyUser" name="debe rechazar acceso cuando el usuario no es tipo user" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyUser" name="debe rechazar acceso cuando no hay req.user" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyUser" name="debe rechazar acceso cuando el usuario no existe" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyUser" name="debe rechazar acceso cuando el usuario está inactivo" time="0.001">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyUser" name="debe manejar errores de base de datos" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyAdmin" name="debe permitir acceso cuando el admin existe y está activo" time="0.004">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyAdmin" name="debe rechazar acceso cuando el usuario no es admin" time="0.002">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyAdmin" name="debe rechazar acceso cuando no hay req.user" time="0.001">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyAdmin" name="debe rechazar acceso cuando el admin no existe" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyAdmin" name="debe rechazar acceso cuando el admin está inactivo" time="0.001">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyAdmin" name="debe asignar rol por defecto si es null" time="0.001">
+    </testcase>
+    <testcase classname="Auth Middleware › verifyAdmin" name="debe manejar errores de base de datos" time="0.001">
+    </testcase>
+    <testcase classname="Auth Middleware › requirePermission" name="debe permitir acceso cuando el admin tiene el permiso" time="0.001">
+    </testcase>
+    <testcase classname="Auth Middleware › requirePermission" name="debe rechazar acceso cuando el admin no tiene el permiso" time="0.001">
+    </testcase>
+    <testcase classname="Auth Middleware › requirePermission" name="debe rechazar acceso cuando no hay currentAdmin" time="0.001">
+    </testcase>
+    <testcase classname="Auth Middleware › requireSuperAdmin" name="debe permitir acceso cuando es super_admin" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › requireSuperAdmin" name="debe rechazar acceso cuando no es super_admin" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › generateAdminToken" name="debe generar token para administrador" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › generateAdminToken" name="debe usar rol por defecto si no existe" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › generateUserToken" name="debe generar token para usuario" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › optionalAuth" name="debe continuar sin token si no hay header" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › optionalAuth" name="debe continuar sin token si header no tiene Bearer" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › optionalAuth" name="debe establecer req.user con token válido de usuario" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › optionalAuth" name="debe establecer req.currentAdmin con token válido de admin" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › optionalAuth" name="debe ignorar errores de token inválido" time="0">
+    </testcase>
+    <testcase classname="Auth Middleware › optionalAuth" name="debe ignorar usuario inactivo" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="__tests__/unit/routes/auth-simple.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T19:40:14" time="0.077" tests="2">
-    <testcase classname="Auth Routes - Simple Coverage Tests" name="debe exportar el router correctamente" time="0">
-    </testcase>
-    <testcase classname="Auth Routes - Simple Coverage Tests" name="debe tener rutas definidas" time="0">
+  <testsuite name="__tests__/unit/routes/debug.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:40" time="0.036" tests="1">
+    <testcase classname="Debug Routes › GET /api/debug/test" name="debe retornar mensaje de prueba" time="0.005">
     </testcase>
   </testsuite>
-  <testsuite name="__tests__/unit/middleware/upload.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T19:40:14" time="0.035" tests="13">
-    <testcase classname="Upload Middleware › handleMulterError" name="debe manejar error LIMIT_FILE_SIZE" time="0.001">
+  <testsuite name="__tests__/unit/models/Product.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:40" time="0.025" tests="34">
+    <testcase classname="Product Model › Constructor" name="debe crear una instancia de Product con los datos proporcionados" time="0.001">
     </testcase>
-    <testcase classname="Upload Middleware › handleMulterError" name="debe manejar error LIMIT_FILE_COUNT" time="0">
-    </testcase>
-    <testcase classname="Upload Middleware › handleMulterError" name="debe manejar error LIMIT_UNEXPECTED_FILE" time="0">
-    </testcase>
-    <testcase classname="Upload Middleware › handleMulterError" name="debe manejar error de tipo de archivo no permitido" time="0">
-    </testcase>
-    <testcase classname="Upload Middleware › handleMulterError" name="debe pasar otros errores al siguiente middleware" time="0">
-    </testcase>
-    <testcase classname="Upload Middleware › validateImage" name="debe continuar si no hay archivo" time="0">
-    </testcase>
-    <testcase classname="Upload Middleware › validateImage" name="debe validar imagen exitosamente" time="0.001">
-    </testcase>
-    <testcase classname="Upload Middleware › validateImage" name="debe eliminar archivo si hay error al validar" time="0">
-    </testcase>
-    <testcase classname="Upload Middleware › deleteOldImage" name="debe eliminar imagen anterior exitosamente" time="0.002">
-    </testcase>
-    <testcase classname="Upload Middleware › deleteOldImage" name="debe manejar error al eliminar imagen sin lanzar excepción" time="0.001">
-    </testcase>
-    <testcase classname="Upload Middleware › deleteOldImage" name="debe retornar sin hacer nada si no hay imagen" time="0">
-    </testcase>
-    <testcase classname="Upload Middleware › cleanupOrphanedFiles" name="debe listar archivos en el directorio" time="0.001">
-    </testcase>
-    <testcase classname="Upload Middleware › cleanupOrphanedFiles" name="debe manejar error al leer directorio" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="__tests__/unit/models/Product.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T19:40:14" time="0.035" tests="34">
-    <testcase classname="Product Model › Constructor" name="debe crear una instancia de Product con los datos proporcionados" time="0">
-    </testcase>
-    <testcase classname="Product Model › findById" name="debe retornar un producto cuando existe" time="0.001">
+    <testcase classname="Product Model › findById" name="debe retornar un producto cuando existe" time="0">
     </testcase>
     <testcase classname="Product Model › findById" name="debe retornar null cuando el producto no existe" time="0">
     </testcase>
@@ -109,11 +141,11 @@
     </testcase>
     <testcase classname="Product Model › create" name="debe manejar valores null/undefined correctamente" time="0">
     </testcase>
-    <testcase classname="Product Model › create" name="debe lanzar error si no se puede crear el producto" time="0.007">
+    <testcase classname="Product Model › create" name="debe lanzar error si no se puede crear el producto" time="0.006">
     </testcase>
     <testcase classname="Product Model › deactivate" name="debe desactivar un producto correctamente" time="0">
     </testcase>
-    <testcase classname="Product Model › update" name="debe actualizar campos permitidos correctamente" time="0.001">
+    <testcase classname="Product Model › update" name="debe actualizar campos permitidos correctamente" time="0">
     </testcase>
     <testcase classname="Product Model › findAll" name="debe retornar productos con paginación básica" time="0">
     </testcase>
@@ -123,7 +155,7 @@
     </testcase>
     <testcase classname="Product Model › findAll" name="debe filtrar por precio mínimo y máximo" time="0">
     </testcase>
-    <testcase classname="Product Model › findAll" name="debe filtrar por stock disponible" time="0.001">
+    <testcase classname="Product Model › findAll" name="debe filtrar por stock disponible" time="0">
     </testcase>
     <testcase classname="Product Model › findAll" name="debe ordenar por nombre ASC" time="0">
     </testcase>
@@ -131,13 +163,13 @@
     </testcase>
     <testcase classname="Product Model › count" name="debe contar productos con filtros" time="0">
     </testcase>
-    <testcase classname="Product Model › updateStock" name="debe actualizar el stock correctamente" time="0.001">
+    <testcase classname="Product Model › updateStock" name="debe actualizar el stock correctamente" time="0">
     </testcase>
-    <testcase classname="Product Model › updateStock" name="debe rechazar stock negativo" time="0">
+    <testcase classname="Product Model › updateStock" name="debe rechazar stock negativo" time="0.001">
     </testcase>
     <testcase classname="Product Model › reduceStock" name="debe reducir el stock correctamente" time="0">
     </testcase>
-    <testcase classname="Product Model › reduceStock" name="debe rechazar cantidad inválida" time="0.001">
+    <testcase classname="Product Model › reduceStock" name="debe rechazar cantidad inválida" time="0">
     </testcase>
     <testcase classname="Product Model › reduceStock" name="debe rechazar si no hay stock suficiente" time="0">
     </testcase>
@@ -145,9 +177,9 @@
     </testcase>
     <testcase classname="Product Model › increaseStock" name="debe rechazar cantidad inválida" time="0">
     </testcase>
-    <testcase classname="Product Model › activate" name="debe activar un producto correctamente" time="0.001">
+    <testcase classname="Product Model › activate" name="debe activar un producto correctamente" time="0">
     </testcase>
-    <testcase classname="Product Model › isInStock" name="debe retornar true si hay stock" time="0.001">
+    <testcase classname="Product Model › isInStock" name="debe retornar true si hay stock" time="0">
     </testcase>
     <testcase classname="Product Model › isInStock" name="debe retornar false si no hay stock" time="0">
     </testcase>
@@ -155,37 +187,71 @@
     </testcase>
     <testcase classname="Product Model › isLowStock" name="debe retornar false si el stock no está bajo" time="0">
     </testcase>
-    <testcase classname="Product Model › getRelatedProducts" name="debe retornar productos relacionados" time="0.001">
+    <testcase classname="Product Model › getRelatedProducts" name="debe retornar productos relacionados" time="0">
     </testcase>
     <testcase classname="Product Model › getLowStockProducts" name="debe retornar productos con stock bajo" time="0">
     </testcase>
-    <testcase classname="Product Model › getOutOfStockProducts" name="debe retornar productos sin stock" time="0">
+    <testcase classname="Product Model › getOutOfStockProducts" name="debe retornar productos sin stock" time="0.001">
     </testcase>
     <testcase classname="Product Model › update" name="debe rechazar actualización sin campos válidos" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="__tests__/unit/routes/products-simple.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T19:40:14" time="0.024" tests="2">
+  <testsuite name="__tests__/unit/middleware/upload.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:40" time="0.027" tests="13">
+    <testcase classname="Upload Middleware › handleMulterError" name="debe manejar error LIMIT_FILE_SIZE" time="0">
+    </testcase>
+    <testcase classname="Upload Middleware › handleMulterError" name="debe manejar error LIMIT_FILE_COUNT" time="0">
+    </testcase>
+    <testcase classname="Upload Middleware › handleMulterError" name="debe manejar error LIMIT_UNEXPECTED_FILE" time="0.001">
+    </testcase>
+    <testcase classname="Upload Middleware › handleMulterError" name="debe manejar error de tipo de archivo no permitido" time="0">
+    </testcase>
+    <testcase classname="Upload Middleware › handleMulterError" name="debe pasar otros errores al siguiente middleware" time="0">
+    </testcase>
+    <testcase classname="Upload Middleware › validateImage" name="debe continuar si no hay archivo" time="0">
+    </testcase>
+    <testcase classname="Upload Middleware › validateImage" name="debe validar imagen exitosamente" time="0">
+    </testcase>
+    <testcase classname="Upload Middleware › validateImage" name="debe eliminar archivo si hay error al validar" time="0">
+    </testcase>
+    <testcase classname="Upload Middleware › deleteOldImage" name="debe eliminar imagen anterior exitosamente" time="0.002">
+    </testcase>
+    <testcase classname="Upload Middleware › deleteOldImage" name="debe manejar error al eliminar imagen sin lanzar excepción" time="0.001">
+    </testcase>
+    <testcase classname="Upload Middleware › deleteOldImage" name="debe retornar sin hacer nada si no hay imagen" time="0">
+    </testcase>
+    <testcase classname="Upload Middleware › cleanupOrphanedFiles" name="debe listar archivos en el directorio" time="0">
+    </testcase>
+    <testcase classname="Upload Middleware › cleanupOrphanedFiles" name="debe manejar error al leer directorio" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/routes/products-simple.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:40" time="0.024" tests="2">
     <testcase classname="Products Routes - Simple Coverage Tests" name="debe exportar el router correctamente" time="0">
     </testcase>
     <testcase classname="Products Routes - Simple Coverage Tests" name="debe tener rutas definidas" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="__tests__/unit/models/Category.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T19:40:14" time="0.025" tests="24">
-    <testcase classname="Category Model › Constructor" name="debe crear una instancia de Category con los datos proporcionados" time="0">
+  <testsuite name="__tests__/unit/routes/auth-simple.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:40" time="0.021" tests="2">
+    <testcase classname="Auth Routes - Simple Coverage Tests" name="debe exportar el router correctamente" time="0">
+    </testcase>
+    <testcase classname="Auth Routes - Simple Coverage Tests" name="debe tener rutas definidas" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/models/Category.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:40" time="0.021" tests="24">
+    <testcase classname="Category Model › Constructor" name="debe crear una instancia de Category con los datos proporcionados" time="0.001">
     </testcase>
     <testcase classname="Category Model › Constructor" name="debe inicializar productos_count en 0 si no se proporciona" time="0">
     </testcase>
-    <testcase classname="Category Model › findById" name="debe retornar una categoría cuando existe" time="0.001">
+    <testcase classname="Category Model › findById" name="debe retornar una categoría cuando existe" time="0">
     </testcase>
     <testcase classname="Category Model › findById" name="debe retornar null cuando la categoría no existe" time="0">
     </testcase>
     <testcase classname="Category Model › findByName" name="debe retornar una categoría cuando el nombre existe" time="0">
     </testcase>
-    <testcase classname="Category Model › create" name="debe crear una nueva categoría correctamente" time="0">
+    <testcase classname="Category Model › create" name="debe crear una nueva categoría correctamente" time="0.001">
     </testcase>
-    <testcase classname="Category Model › create" name="debe lanzar error si no se puede crear la categoría" time="0.005">
+    <testcase classname="Category Model › create" name="debe lanzar error si no se puede crear la categoría" time="0.003">
     </testcase>
-    <testcase classname="Category Model › findAll" name="debe retornar todas las categorías con conteo de productos" time="0">
+    <testcase classname="Category Model › findAll" name="debe retornar todas las categorías con conteo de productos" time="0.001">
     </testcase>
     <testcase classname="Category Model › findAll" name="debe retornar categorías sin conteo cuando includeProductCount es false" time="0">
     </testcase>
@@ -197,7 +263,7 @@
     </testcase>
     <testcase classname="Category Model › deactivate" name="debe desactivar una categoría sin productos" time="0">
     </testcase>
-    <testcase classname="Category Model › deactivate" name="debe lanzar error si la categoría tiene productos" time="0">
+    <testcase classname="Category Model › deactivate" name="debe lanzar error si la categoría tiene productos" time="0.001">
     </testcase>
     <testcase classname="Category Model › getStats" name="debe retornar estadísticas de la categoría" time="0">
     </testcase>
@@ -209,18 +275,18 @@
     </testcase>
     <testcase classname="Category Model › activate" name="debe activar una categoría correctamente" time="0">
     </testcase>
-    <testcase classname="Category Model › getProducts" name="debe retornar productos de la categoría" time="0.001">
+    <testcase classname="Category Model › getProducts" name="debe retornar productos de la categoría" time="0">
     </testcase>
     <testcase classname="Category Model › getProducts" name="debe ordenar productos correctamente" time="0">
     </testcase>
-    <testcase classname="Category Model › count" name="debe contar todas las categorías activas" time="0">
+    <testcase classname="Category Model › count" name="debe contar todas las categorías activas" time="0.001">
     </testcase>
     <testcase classname="Category Model › search" name="debe buscar categorías por término" time="0">
     </testcase>
     <testcase classname="Category Model › toJSON" name="debe retornar objeto JSON con campos correctos" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="__tests__/unit/models/Admin.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T19:40:14" time="0.022" tests="27">
+  <testsuite name="__tests__/unit/models/Admin.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:40" time="0.021" tests="27">
     <testcase classname="Admin Model › Constructor" name="debe crear una instancia de Admin con los datos proporcionados" time="0">
     </testcase>
     <testcase classname="Admin Model › Constructor" name="debe asignar rol por defecto &quot;admin&quot; si no se proporciona" time="0">
@@ -245,19 +311,19 @@
     </testcase>
     <testcase classname="Admin Model › create" name="debe crear un nuevo administrador correctamente" time="0">
     </testcase>
-    <testcase classname="Admin Model › create" name="debe usar rol &quot;admin&quot; por defecto si no se proporciona" time="0.001">
+    <testcase classname="Admin Model › create" name="debe usar rol &quot;admin&quot; por defecto si no se proporciona" time="0">
     </testcase>
     <testcase classname="Admin Model › updateLastAccess" name="debe actualizar el último acceso correctamente" time="0">
     </testcase>
-    <testcase classname="Admin Model › update" name="debe actualizar campos permitidos correctamente" time="0">
+    <testcase classname="Admin Model › update" name="debe actualizar campos permitidos correctamente" time="0.001">
     </testcase>
-    <testcase classname="Admin Model › update" name="debe rechazar campos no permitidos" time="0.004">
+    <testcase classname="Admin Model › update" name="debe rechazar campos no permitidos" time="0.003">
     </testcase>
     <testcase classname="Admin Model › getStats" name="debe retornar estadísticas del administrador" time="0">
     </testcase>
     <testcase classname="Admin Model › findAll" name="debe retornar todos los administradores con paginación" time="0">
     </testcase>
-    <testcase classname="Admin Model › changePassword" name="debe cambiar la contraseña correctamente" time="0.001">
+    <testcase classname="Admin Model › changePassword" name="debe cambiar la contraseña correctamente" time="0">
     </testcase>
     <testcase classname="Admin Model › changePassword" name="debe rechazar cambio con password actual incorrecto" time="0">
     </testcase>
@@ -267,55 +333,21 @@
     </testcase>
     <testcase classname="Admin Model › activate" name="debe activar un administrador correctamente" time="0">
     </testcase>
-    <testcase classname="Admin Model › count" name="debe contar todos los administradores activos" time="0">
+    <testcase classname="Admin Model › count" name="debe contar todos los administradores activos" time="0.001">
     </testcase>
     <testcase classname="Admin Model › search" name="debe buscar administradores por término" time="0">
     </testcase>
-    <testcase classname="Admin Model › toJSON" name="debe retornar objeto sin password" time="0.001">
+    <testcase classname="Admin Model › toJSON" name="debe retornar objeto sin password" time="0">
     </testcase>
     <testcase classname="Admin Model › toJSON" name="debe asignar rol por defecto si es null" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="__tests__/unit/middleware/auth.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T19:40:14" time="0.024" tests="16">
-    <testcase classname="Auth Middleware › verifyToken" name="debe permitir acceso con token válido" time="0">
-    </testcase>
-    <testcase classname="Auth Middleware › verifyToken" name="debe rechazar acceso sin token" time="0">
-    </testcase>
-    <testcase classname="Auth Middleware › verifyToken" name="debe rechazar token expirado" time="0">
-    </testcase>
-    <testcase classname="Auth Middleware › verifyToken" name="debe rechazar token inválido" time="0">
-    </testcase>
-    <testcase classname="Auth Middleware › verifyAdmin" name="debe permitir acceso cuando el admin existe y está activo" time="0.002">
-    </testcase>
-    <testcase classname="Auth Middleware › verifyAdmin" name="debe rechazar acceso cuando el usuario no es admin" time="0.001">
-    </testcase>
-    <testcase classname="Auth Middleware › verifyAdmin" name="debe rechazar acceso cuando el admin no existe" time="0.001">
-    </testcase>
-    <testcase classname="Auth Middleware › verifyAdmin" name="debe asignar rol por defecto si es null" time="0">
-    </testcase>
-    <testcase classname="Auth Middleware › requirePermission" name="debe permitir acceso cuando el admin tiene el permiso" time="0.001">
-    </testcase>
-    <testcase classname="Auth Middleware › requirePermission" name="debe rechazar acceso cuando el admin no tiene el permiso" time="0.001">
-    </testcase>
-    <testcase classname="Auth Middleware › requirePermission" name="debe rechazar acceso cuando no hay currentAdmin" time="0">
-    </testcase>
-    <testcase classname="Auth Middleware › requireSuperAdmin" name="debe permitir acceso cuando es super_admin" time="0.001">
-    </testcase>
-    <testcase classname="Auth Middleware › requireSuperAdmin" name="debe rechazar acceso cuando no es super_admin" time="0">
-    </testcase>
-    <testcase classname="Auth Middleware › generateAdminToken" name="debe generar token para administrador" time="0">
-    </testcase>
-    <testcase classname="Auth Middleware › generateAdminToken" name="debe usar rol por defecto si no existe" time="0">
-    </testcase>
-    <testcase classname="Auth Middleware › generateUserToken" name="debe generar token para usuario" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="__tests__/unit/models/User.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T19:40:14" time="0.021" tests="21">
+  <testsuite name="__tests__/unit/models/User.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:40" time="0.02" tests="21">
     <testcase classname="User Model › Constructor" name="debe crear una instancia de User con los datos proporcionados" time="0">
     </testcase>
-    <testcase classname="User Model › findById" name="debe retornar un usuario cuando existe" time="0.001">
+    <testcase classname="User Model › findById" name="debe retornar un usuario cuando existe" time="0">
     </testcase>
-    <testcase classname="User Model › findById" name="debe retornar null cuando el usuario no existe" time="0">
+    <testcase classname="User Model › findById" name="debe retornar null cuando el usuario no existe" time="0.001">
     </testcase>
     <testcase classname="User Model › findById" name="debe manejar errores de base de datos" time="0">
     </testcase>
@@ -331,17 +363,17 @@
     </testcase>
     <testcase classname="User Model › verifyPassword" name="debe retornar false cuando la contraseña es incorrecta" time="0">
     </testcase>
-    <testcase classname="User Model › update" name="debe actualizar campos permitidos correctamente" time="0.001">
+    <testcase classname="User Model › update" name="debe actualizar campos permitidos correctamente" time="0">
     </testcase>
     <testcase classname="User Model › update" name="debe lanzar error si no hay campos válidos para actualizar" time="0">
     </testcase>
-    <testcase classname="User Model › changePassword" name="debe cambiar la contraseña cuando la actual es correcta" time="0">
+    <testcase classname="User Model › changePassword" name="debe cambiar la contraseña cuando la actual es correcta" time="0.001">
     </testcase>
     <testcase classname="User Model › changePassword" name="debe lanzar error si la contraseña actual es incorrecta" time="0">
     </testcase>
     <testcase classname="User Model › deactivate" name="debe desactivar un usuario correctamente" time="0">
     </testcase>
-    <testcase classname="User Model › activate" name="debe activar un usuario correctamente" time="0.001">
+    <testcase classname="User Model › activate" name="debe activar un usuario correctamente" time="0">
     </testcase>
     <testcase classname="User Model › findAll" name="debe retornar lista de usuarios con paginación" time="0">
     </testcase>
@@ -351,7 +383,21 @@
     </testcase>
     <testcase classname="User Model › search" name="debe buscar usuarios por término" time="0">
     </testcase>
-    <testcase classname="User Model › toJSON" name="debe retornar objeto sin password" time="0">
+    <testcase classname="User Model › toJSON" name="debe retornar objeto sin password" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="__tests__/unit/config/database-mysql.test.js" errors="0" failures="0" skipped="0" timestamp="2025-11-20T20:11:40" time="0.015" tests="6">
+    <testcase classname="Database MySQL Config › Module exports" name="debe exportar getConnection" time="0.001">
+    </testcase>
+    <testcase classname="Database MySQL Config › Module exports" name="debe exportar testConnection" time="0">
+    </testcase>
+    <testcase classname="Database MySQL Config › Module exports" name="debe exportar executeQuery" time="0">
+    </testcase>
+    <testcase classname="Database MySQL Config › Module exports" name="debe exportar executeTransaction" time="0">
+    </testcase>
+    <testcase classname="Database MySQL Config › Module exports" name="debe exportar initializeTables" time="0">
+    </testcase>
+    <testcase classname="Database MySQL Config › Module exports" name="debe exportar closeConnection" time="0">
     </testcase>
   </testsuite>
 </testsuites>

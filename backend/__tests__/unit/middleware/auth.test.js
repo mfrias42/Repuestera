@@ -26,9 +26,11 @@ const User = require('../../../models/User');
 // Extraer funciones del módulo
 const {
   verifyToken,
+  verifyUser,
   verifyAdmin,
   requirePermission,
   requireSuperAdmin,
+  optionalAuth,
   generateAdminToken,
   generateUserToken
 } = authMiddleware;
@@ -70,6 +72,7 @@ describe('Auth Middleware', () => {
       // Assert
       expect(jwt.verify).toHaveBeenCalledWith(token, process.env.JWT_SECRET);
       expect(req.user).toEqual(decoded);
+      expect(req.token).toBe(token);
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
     });
@@ -86,6 +89,40 @@ describe('Auth Middleware', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           error: 'Token de acceso requerido'
+        })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('debe rechazar header sin Bearer', () => {
+      // Arrange
+      req.headers.authorization = 'InvalidFormat token123';
+
+      // Act
+      verifyToken(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Token de acceso requerido'
+        })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('debe rechazar token vacío después de Bearer', () => {
+      // Arrange
+      req.headers.authorization = 'Bearer ';
+
+      // Act
+      verifyToken(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Token no proporcionado'
         })
       );
       expect(next).not.toHaveBeenCalled();
@@ -132,6 +169,132 @@ describe('Auth Middleware', () => {
         })
       );
     });
+
+    test('debe manejar otros errores de verificación', () => {
+      // Arrange
+      req.headers.authorization = 'Bearer token';
+      const error = new Error('Other error');
+      jwt.verify.mockImplementation(() => {
+        throw error;
+      });
+
+      // Act
+      verifyToken(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Error de autenticación'
+        })
+      );
+    });
+  });
+
+  describe('verifyUser', () => {
+    test('debe permitir acceso cuando el usuario existe y está activo', async () => {
+      // Arrange
+      req.user = { id: 1, type: 'user' };
+      const mockUser = {
+        id: 1,
+        email: 'user@test.com',
+        activo: true
+      };
+      User.findById.mockResolvedValue(mockUser);
+
+      // Act
+      await verifyUser(req, res, next);
+
+      // Assert
+      expect(User.findById).toHaveBeenCalledWith(1);
+      expect(req.currentUser).toEqual(mockUser);
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('debe rechazar acceso cuando el usuario no es tipo user', async () => {
+      // Arrange
+      req.user = { id: 1, type: 'admin' };
+
+      // Act
+      await verifyUser(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Acceso denegado'
+        })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('debe rechazar acceso cuando no hay req.user', async () => {
+      // Arrange
+      req.user = null;
+
+      // Act
+      await verifyUser(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('debe rechazar acceso cuando el usuario no existe', async () => {
+      // Arrange
+      req.user = { id: 999, type: 'user' };
+      User.findById.mockResolvedValue(null);
+
+      // Act
+      await verifyUser(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Usuario no encontrado'
+        })
+      );
+    });
+
+    test('debe rechazar acceso cuando el usuario está inactivo', async () => {
+      // Arrange
+      req.user = { id: 1, type: 'user' };
+      const mockUser = {
+        id: 1,
+        email: 'user@test.com',
+        activo: false
+      };
+      User.findById.mockResolvedValue(mockUser);
+
+      // Act
+      await verifyUser(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Cuenta desactivada'
+        })
+      );
+    });
+
+    test('debe manejar errores de base de datos', async () => {
+      // Arrange
+      req.user = { id: 1, type: 'user' };
+      User.findById.mockRejectedValue(new Error('DB Error'));
+
+      // Act
+      await verifyUser(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Error de verificación'
+        })
+      );
+    });
   });
 
   describe('verifyAdmin', () => {
@@ -174,6 +337,18 @@ describe('Auth Middleware', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
+    test('debe rechazar acceso cuando no hay req.user', async () => {
+      // Arrange
+      req.user = null;
+
+      // Act
+      await verifyAdmin(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    });
+
     test('debe rechazar acceso cuando el admin no existe', async () => {
       // Arrange
       req.user = { id: 999, type: 'admin' };
@@ -187,6 +362,29 @@ describe('Auth Middleware', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           error: 'Administrador no encontrado'
+        })
+      );
+    });
+
+    test('debe rechazar acceso cuando el admin está inactivo', async () => {
+      // Arrange
+      req.user = { id: 1, type: 'admin' };
+      const mockAdmin = {
+        id: 1,
+        email: 'admin@test.com',
+        rol: 'admin',
+        activo: false
+      };
+      Admin.findById.mockResolvedValue(mockAdmin);
+
+      // Act
+      await verifyAdmin(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Cuenta desactivada'
         })
       );
     });
@@ -209,6 +407,23 @@ describe('Auth Middleware', () => {
       // Assert
       expect(mockAdmin.rol).toBe('admin');
       expect(next).toHaveBeenCalled();
+    });
+
+    test('debe manejar errores de base de datos', async () => {
+      // Arrange
+      req.user = { id: 1, type: 'admin' };
+      Admin.findById.mockRejectedValue(new Error('DB Error'));
+
+      // Act
+      await verifyAdmin(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'Error de verificación'
+        })
+      );
     });
   });
 
@@ -383,6 +598,98 @@ describe('Auth Middleware', () => {
         expect.any(Object)
       );
       expect(token).toBe('user_token');
+    });
+  });
+
+  describe('optionalAuth', () => {
+    test('debe continuar sin token si no hay header', async () => {
+      // Arrange
+      req.headers.authorization = undefined;
+
+      // Act
+      await optionalAuth(req, res, next);
+
+      // Assert
+      expect(next).toHaveBeenCalled();
+      expect(req.user).toBeNull();
+    });
+
+    test('debe continuar sin token si header no tiene Bearer', async () => {
+      // Arrange
+      req.headers.authorization = 'InvalidFormat token';
+
+      // Act
+      await optionalAuth(req, res, next);
+
+      // Assert
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('debe establecer req.user con token válido de usuario', async () => {
+      // Arrange
+      const decoded = { id: 1, type: 'user' };
+      const mockUser = { id: 1, activo: true };
+      req.headers.authorization = 'Bearer valid_token';
+      jwt.verify.mockReturnValue(decoded);
+      User.findById.mockResolvedValue(mockUser);
+
+      // Act
+      await optionalAuth(req, res, next);
+
+      // Assert
+      expect(req.user).toEqual(decoded);
+      expect(req.currentUser).toEqual(mockUser);
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('debe establecer req.currentAdmin con token válido de admin', async () => {
+      // Arrange
+      const decoded = { id: 1, type: 'admin' };
+      const mockAdmin = { id: 1, activo: true, updateLastAccess: jest.fn().mockResolvedValue(true) };
+      req.headers.authorization = 'Bearer valid_token';
+      jwt.verify.mockReturnValue(decoded);
+      Admin.findById.mockResolvedValue(mockAdmin);
+
+      // Act
+      await optionalAuth(req, res, next);
+
+      // Assert
+      expect(req.user).toEqual(decoded);
+      expect(req.currentAdmin).toEqual(mockAdmin);
+      expect(mockAdmin.updateLastAccess).toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('debe ignorar errores de token inválido', async () => {
+      // Arrange
+      req.headers.authorization = 'Bearer invalid_token';
+      jwt.verify.mockImplementation(() => {
+        throw new Error('Invalid token');
+      });
+
+      // Act
+      await optionalAuth(req, res, next);
+
+      // Assert
+      expect(next).toHaveBeenCalled();
+      expect(req.user).toBeNull();
+    });
+
+    test('debe ignorar usuario inactivo', async () => {
+      // Arrange
+      const decoded = { id: 1, type: 'user' };
+      const mockUser = { id: 1, activo: false };
+      req.headers.authorization = 'Bearer valid_token';
+      jwt.verify.mockReturnValue(decoded);
+      User.findById.mockResolvedValue(mockUser);
+
+      // Act
+      await optionalAuth(req, res, next);
+
+      // Assert
+      expect(req.user).toEqual(decoded);
+      expect(req.currentUser).toBeNull();
+      expect(next).toHaveBeenCalled();
     });
   });
 });
