@@ -307,6 +307,142 @@ describe('Admin Model', () => {
     });
   });
 
+  describe('findAll', () => {
+    test('debe retornar todos los administradores con paginación', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([
+        mockData.admins[0],
+        { ...mockData.admins[0], id: 2, email: 'admin2@test.com' }
+      ]);
+
+      // Act
+      const admins = await Admin.findAll(10, 0);
+
+      // Assert
+      expect(admins).toBeInstanceOf(Array);
+      expect(admins[0]).toBeInstanceOf(Admin);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('LIMIT 10 OFFSET 0'),
+        []
+      );
+    });
+  });
+
+  describe('changePassword', () => {
+    test('debe cambiar la contraseña correctamente', async () => {
+      // Arrange
+      const admin = new Admin(mockData.admins[0]);
+      admin.password = '$2a$12$hashed';
+      bcrypt.compare.mockResolvedValue(true);
+      bcrypt.hash.mockResolvedValue('$2a$12$newhashed');
+      executeQuery.mockResolvedValue({ affectedRows: 1 });
+
+      // Act
+      const result = await admin.changePassword('oldpassword', 'newpassword');
+
+      // Assert
+      expect(result).toBe(true);
+      expect(bcrypt.compare).toHaveBeenCalledWith('oldpassword', '$2a$12$hashed');
+      expect(bcrypt.hash).toHaveBeenCalledWith('newpassword', 12);
+      expect(executeQuery).toHaveBeenCalled();
+    });
+
+    test('debe rechazar cambio con password actual incorrecto', async () => {
+      // Arrange
+      const admin = new Admin(mockData.admins[0]);
+      admin.password = '$2a$12$hashed';
+      bcrypt.compare.mockResolvedValue(false);
+
+      // Act & Assert
+      await expect(admin.changePassword('wrongpassword', 'newpassword')).rejects.toThrow('Password actual incorrecto');
+    });
+  });
+
+  describe('verifyPassword', () => {
+    test('debe verificar password correctamente', async () => {
+      // Arrange
+      const admin = new Admin(mockData.admins[0]);
+      admin.password = '$2a$12$hashed';
+      bcrypt.compare.mockResolvedValue(true);
+
+      // Act
+      const isValid = await admin.verifyPassword('password123');
+
+      // Assert
+      expect(isValid).toBe(true);
+      expect(bcrypt.compare).toHaveBeenCalledWith('password123', admin.password);
+    });
+  });
+
+  describe('deactivate', () => {
+    test('debe desactivar un administrador correctamente', async () => {
+      // Arrange
+      const admin = new Admin(mockData.admins[0]);
+      executeQuery.mockResolvedValue({ affectedRows: 1 });
+
+      // Act
+      const result = await admin.deactivate();
+
+      // Assert
+      expect(result.activo).toBe(false);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('activo = FALSE'),
+        [admin.id]
+      );
+    });
+  });
+
+  describe('activate', () => {
+    test('debe activar un administrador correctamente', async () => {
+      // Arrange
+      const admin = new Admin({ ...mockData.admins[0], activo: false });
+      executeQuery.mockResolvedValue({ affectedRows: 1 });
+
+      // Act
+      const result = await admin.activate();
+
+      // Assert
+      expect(result.activo).toBe(true);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('activo = TRUE'),
+        [admin.id]
+      );
+    });
+  });
+
+  describe('count', () => {
+    test('debe contar todos los administradores activos', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([{ total: 5 }]);
+
+      // Act
+      const count = await Admin.count();
+
+      // Assert
+      expect(count).toBe(5);
+      expect(executeQuery).toHaveBeenCalled();
+      const callArgs = executeQuery.mock.calls[0];
+      expect(callArgs[0]).toContain('COUNT(*)');
+    });
+  });
+
+  describe('search', () => {
+    test('debe buscar administradores por término', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([mockData.admins[0]]);
+
+      // Act
+      const admins = await Admin.search('admin', 10, 0);
+
+      // Assert
+      expect(admins).toBeInstanceOf(Array);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('LIKE ?'),
+        expect.arrayContaining(['%admin%', 10, 0])
+      );
+    });
+  });
+
   describe('toJSON', () => {
     test('debe retornar objeto sin password', () => {
       // Arrange

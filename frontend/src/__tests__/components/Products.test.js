@@ -1,15 +1,27 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import Products from '../../pages/Products';
-import CartContext from '../../context/CartContext';
-import { productService } from '../../services/api';
+// Mock de react-router-dom ANTES de los imports
+jest.mock('react-router-dom', () => {
+  return {
+    BrowserRouter: ({ children }) => children,
+    Routes: ({ children }) => children,
+    Route: ({ element }) => element,
+    Navigate: () => null,
+    Link: ({ children, to }) => <a href={to}>{children}</a>,
+    useNavigate: () => jest.fn()
+  };
+});
 
 jest.mock('../../services/api', () => ({
   productService: {
     getProducts: jest.fn()
   }
 }));
+
+import React from 'react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import Products from '../../pages/Products';
+import CartContext from '../../context/CartContext';
+import { productService } from '../../services/api';
 
 const mockAddToCart = jest.fn();
 const mockGetItemQuantity = jest.fn(() => 0);
@@ -97,11 +109,17 @@ describe('Products Component', () => {
   it('debe mostrar error cuando falla la carga de productos', async () => {
     productService.getProducts.mockRejectedValue(new Error('Error de red'));
     
+    // Silenciar console.error para este test
+    const originalError = console.error;
+    console.error = jest.fn();
+    
     renderWithProviders(<Products />);
     
     await waitFor(() => {
       expect(screen.getByText(/error al cargar productos/i)).toBeInTheDocument();
-    });
+    }, { timeout: 3000 });
+    
+    console.error = originalError;
   });
 
   it('debe filtrar productos por búsqueda', async () => {
@@ -120,7 +138,9 @@ describe('Products Component', () => {
     });
     
     const searchInput = screen.getByPlaceholderText(/buscar productos/i);
-    fireEvent.change(searchInput, { target: { value: 'Filtro' } });
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'Filtro' } });
+    });
     
     await waitFor(() => {
       expect(productService.getProducts).toHaveBeenCalledWith(
@@ -150,7 +170,9 @@ describe('Products Component', () => {
     });
     
     const addButton = screen.getByText(/agregar al carrito/i);
-    fireEvent.click(addButton);
+    await act(async () => {
+      fireEvent.click(addButton);
+    });
     
     expect(mockAddToCart).toHaveBeenCalledWith(mockProduct, 1);
   });
@@ -175,7 +197,11 @@ describe('Products Component', () => {
       expect(screen.getByText('Producto Sin Stock')).toBeInTheDocument();
     });
     
-    const addButton = screen.getByText(/sin stock/i);
+    // Buscar el botón específicamente por su texto "Sin Stock" (no el título del producto)
+    const addButtons = screen.getAllByText(/sin stock/i);
+    // El botón debe ser el que está dentro de un Button, no el título
+    const addButton = addButtons.find(btn => btn.closest('button') !== null);
+    expect(addButton).toBeDefined();
     expect(addButton).toBeDisabled();
   });
 
@@ -208,11 +234,43 @@ describe('Products Component', () => {
     renderWithProviders(<Products />);
     
     await waitFor(() => {
-      const categorySelect = screen.getByLabelText(/categoría/i);
-      fireEvent.mouseDown(categorySelect);
+      // Esperar a que el componente se renderice completamente
+      expect(screen.getByText(/catálogo de productos/i)).toBeInTheDocument();
+    });
+    
+    // Buscar el select de categoría usando getByLabelText para MUI Select
+    // Primero esperar a que el componente se renderice completamente
+    await waitFor(() => {
+      expect(screen.getByText(/catálogo de productos/i)).toBeInTheDocument();
+    });
+    
+    // MUI Select con label - buscar todos los labels "Categoría" y tomar el del FormControl correcto
+    const categoryLabels = screen.getAllByText('Categoría');
+    const categoryLabel = categoryLabels.find(label => {
+      // El label correcto está dentro de un FormControl que contiene un Select
+      const formControl = label.closest('.MuiFormControl-root');
+      return formControl && formControl.querySelector('.MuiSelect-root');
+    });
+    
+    expect(categoryLabel).not.toBeUndefined();
+    
+    const formControl = categoryLabel.closest('.MuiFormControl-root');
+    const selectElement = formControl?.querySelector('[role="combobox"]') ||
+                         formControl?.querySelector('.MuiSelect-root') ||
+                         formControl?.querySelector('input');
+    
+    expect(selectElement).not.toBeNull();
+    
+    await act(async () => {
+      fireEvent.mouseDown(selectElement);
     });
     
     await waitFor(() => {
+      const repuestosOption = screen.getByText('Repuestos');
+      expect(repuestosOption).toBeInTheDocument();
+    });
+    
+    await act(async () => {
       const repuestosOption = screen.getByText('Repuestos');
       fireEvent.click(repuestosOption);
     });
@@ -245,7 +303,9 @@ describe('Products Component', () => {
     });
     
     const addButton = screen.getByText(/agregar al carrito/i);
-    fireEvent.click(addButton);
+    await act(async () => {
+      fireEvent.click(addButton);
+    });
     
     await waitFor(() => {
       expect(screen.getByText(/agregado al carrito/i)).toBeInTheDocument();
@@ -277,7 +337,9 @@ describe('Products Component', () => {
     });
     
     const addButton = screen.getByText(/agregar al carrito/i);
-    fireEvent.click(addButton);
+    await act(async () => {
+      fireEvent.click(addButton);
+    });
     
     await waitFor(() => {
       expect(screen.getByText(/error/i)).toBeInTheDocument();
@@ -298,10 +360,50 @@ describe('Products Component', () => {
     renderWithProviders(<Products />);
     
     await waitFor(() => {
-      expect(screen.getByText(/sin stock/i)).toBeInTheDocument();
-      expect(screen.getByText(/poco stock/i)).toBeInTheDocument();
-      expect(screen.getByText(/en stock/i)).toBeInTheDocument();
+      // Verificar que los productos se renderizaron
+      // Usar getAllByText porque puede haber múltiples elementos con el mismo texto (título y chip)
+      const sinStockElements = screen.getAllByText('Sin Stock');
+      const pocoStockElements = screen.getAllByText('Poco Stock');
+      const enStockElements = screen.getAllByText('En Stock');
+      
+      expect(sinStockElements.length).toBeGreaterThan(0);
+      expect(pocoStockElements.length).toBeGreaterThan(0);
+      expect(enStockElements.length).toBeGreaterThan(0);
     });
+    
+    // Verificar que los chips de stock están presentes
+    // Hay múltiples elementos con "Sin Stock" (título del producto y chip), usar getAllByText
+    const sinStockElements = screen.getAllByText(/sin stock/i);
+    const pocoStockElements = screen.getAllByText(/poco stock/i);
+    const enStockElements = screen.getAllByText(/en stock/i);
+    
+    // Debe haber al menos un elemento con cada texto (puede ser el título o el chip)
+    expect(sinStockElements.length).toBeGreaterThan(0);
+    expect(pocoStockElements.length).toBeGreaterThan(0);
+    expect(enStockElements.length).toBeGreaterThan(0);
+    
+    // Verificar que hay chips específicamente (dentro de elementos con clase MuiChip)
+    // Filtrar para encontrar solo los chips, no los títulos de los productos
+    const sinStockChips = sinStockElements.filter(el => {
+      const chip = el.closest('[class*="MuiChip"]');
+      // También verificar que no es el título del producto (h2)
+      const isTitle = el.tagName === 'H2' || el.closest('h2') !== null;
+      return chip !== null && !isTitle;
+    });
+    const pocoStockChips = pocoStockElements.filter(el => {
+      const chip = el.closest('[class*="MuiChip"]');
+      const isTitle = el.tagName === 'H2' || el.closest('h2') !== null;
+      return chip !== null && !isTitle;
+    });
+    const enStockChips = enStockElements.filter(el => {
+      const chip = el.closest('[class*="MuiChip"]');
+      const isTitle = el.tagName === 'H2' || el.closest('h2') !== null;
+      return chip !== null && !isTitle;
+    });
+    
+    expect(sinStockChips.length).toBeGreaterThan(0);
+    expect(pocoStockChips.length).toBeGreaterThan(0);
+    expect(enStockChips.length).toBeGreaterThan(0);
   });
 
   it('debe mostrar categoría del producto si existe', async () => {
@@ -334,11 +436,42 @@ describe('Products Component', () => {
     renderWithProviders(<Products />);
     
     await waitFor(() => {
-      const sortSelect = screen.getByLabelText(/ordenar por/i);
-      fireEvent.mouseDown(sortSelect);
+      // Esperar a que el componente se renderice completamente
+      expect(screen.getByText(/catálogo de productos/i)).toBeInTheDocument();
+    });
+    
+    // Buscar el select de ordenamiento usando getByLabelText para MUI Select
+    await waitFor(() => {
+      expect(screen.getByText(/catálogo de productos/i)).toBeInTheDocument();
+    });
+    
+    // MUI Select con label - buscar todos los labels "Ordenar por" y tomar el del FormControl correcto
+    const sortLabels = screen.getAllByText('Ordenar por');
+    const sortLabel = sortLabels.find(label => {
+      // El label correcto está dentro de un FormControl que contiene un Select
+      const formControl = label.closest('.MuiFormControl-root');
+      return formControl && formControl.querySelector('.MuiSelect-root');
+    });
+    
+    expect(sortLabel).not.toBeUndefined();
+    
+    const formControl = sortLabel.closest('.MuiFormControl-root');
+    const sortSelectElement = formControl?.querySelector('[role="combobox"]') ||
+                            formControl?.querySelector('.MuiSelect-root') ||
+                            formControl?.querySelector('input');
+    
+    expect(sortSelectElement).not.toBeNull();
+    
+    await act(async () => {
+      fireEvent.mouseDown(sortSelectElement);
     });
     
     await waitFor(() => {
+      const precioOption = screen.getByText('Precio');
+      expect(precioOption).toBeInTheDocument();
+    });
+    
+    await act(async () => {
       const precioOption = screen.getByText('Precio');
       fireEvent.click(precioOption);
     });

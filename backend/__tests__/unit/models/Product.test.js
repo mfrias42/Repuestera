@@ -219,6 +219,275 @@ describe('Product Model', () => {
     });
   });
 
+  describe('findAll', () => {
+    test('debe retornar productos con paginación básica', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue(mockData.products);
+
+      // Act
+      const products = await Product.findAll({ limit: 10, offset: 0 });
+
+      // Assert
+      expect(products).toBeInstanceOf(Array);
+      expect(products[0]).toBeInstanceOf(Product);
+    });
+
+    test('debe filtrar por categoría', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([mockData.products[0]]);
+
+      // Act
+      const products = await Product.findAll({ categoria_id: 1, limit: 10, offset: 0 });
+
+      // Assert
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('categoria_id = ?'),
+        expect.arrayContaining([1])
+      );
+    });
+
+    test('debe filtrar por búsqueda', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([mockData.products[0]]);
+
+      // Act
+      const products = await Product.findAll({ search: 'filtro', limit: 10, offset: 0 });
+
+      // Assert
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('LIKE ?'),
+        expect.any(Array)
+      );
+    });
+
+    test('debe filtrar por precio mínimo y máximo', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([mockData.products[0]]);
+
+      // Act
+      const products = await Product.findAll({ minPrice: 10, maxPrice: 50, limit: 10, offset: 0 });
+
+      // Assert
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('precio >= ?'),
+        expect.arrayContaining([10, 50])
+      );
+    });
+
+    test('debe filtrar por stock disponible', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([mockData.products[0]]);
+
+      // Act
+      const products = await Product.findAll({ inStock: true, limit: 10, offset: 0 });
+
+      // Assert
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('stock > 0'),
+        expect.any(Array)
+      );
+    });
+
+    test('debe ordenar por nombre ASC', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue(mockData.products);
+
+      // Act
+      const products = await Product.findAll({ orderBy: 'nombre', orderDirection: 'ASC', limit: 10, offset: 0 });
+
+      // Assert
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('ORDER BY p.nombre ASC'),
+        expect.any(Array)
+      );
+    });
+  });
+
+  describe('count', () => {
+    test('debe contar todos los productos activos', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([{ total: 10 }]);
+
+      // Act
+      const count = await Product.count();
+
+      // Assert
+      expect(count).toBe(10);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('COUNT(*)'),
+        []
+      );
+    });
+
+    test('debe contar productos con filtros', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([{ total: 5 }]);
+
+      // Act
+      const count = await Product.count({ categoria_id: 1, search: 'filtro' });
+
+      // Assert
+      expect(count).toBe(5);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('categoria_id = ?'),
+        expect.any(Array)
+      );
+    });
+  });
+
+  describe('updateStock', () => {
+    test('debe actualizar el stock correctamente', async () => {
+      // Arrange
+      const product = new Product(mockData.products[0]);
+      executeQuery.mockResolvedValue({ affectedRows: 1 });
+
+      // Act
+      const result = await product.updateStock(50);
+
+      // Assert
+      expect(result.stock).toBe(50);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE productos SET stock = ?'),
+        [50, product.id]
+      );
+    });
+
+    test('debe rechazar stock negativo', async () => {
+      // Arrange
+      const product = new Product(mockData.products[0]);
+
+      // Act & Assert
+      await expect(product.updateStock(-1)).rejects.toThrow('El stock no puede ser negativo');
+    });
+  });
+
+  describe('reduceStock', () => {
+    test('debe reducir el stock correctamente', async () => {
+      // Arrange
+      const product = new Product({ ...mockData.products[0], stock: 10 });
+      executeQuery.mockResolvedValue({ affectedRows: 1 });
+
+      // Act
+      const result = await product.reduceStock(5);
+
+      // Assert
+      expect(result.stock).toBe(5);
+    });
+
+    test('debe rechazar cantidad inválida', async () => {
+      // Arrange
+      const product = new Product(mockData.products[0]);
+
+      // Act & Assert
+      await expect(product.reduceStock(0)).rejects.toThrow('La cantidad debe ser mayor a 0');
+      await expect(product.reduceStock(-1)).rejects.toThrow('La cantidad debe ser mayor a 0');
+    });
+
+    test('debe rechazar si no hay stock suficiente', async () => {
+      // Arrange
+      const product = new Product({ ...mockData.products[0], stock: 5 });
+
+      // Act & Assert
+      await expect(product.reduceStock(10)).rejects.toThrow('Stock insuficiente');
+    });
+  });
+
+  describe('increaseStock', () => {
+    test('debe aumentar el stock correctamente', async () => {
+      // Arrange
+      const product = new Product({ ...mockData.products[0], stock: 10 });
+      executeQuery.mockResolvedValue({ affectedRows: 1 });
+
+      // Act
+      const result = await product.increaseStock(5);
+
+      // Assert
+      expect(result.stock).toBe(15);
+    });
+
+    test('debe rechazar cantidad inválida', async () => {
+      // Arrange
+      const product = new Product(mockData.products[0]);
+
+      // Act & Assert
+      await expect(product.increaseStock(0)).rejects.toThrow('La cantidad debe ser mayor a 0');
+    });
+  });
+
+  describe('activate', () => {
+    test('debe activar un producto correctamente', async () => {
+      // Arrange
+      const product = new Product({ ...mockData.products[0], activo: false });
+      executeQuery.mockResolvedValue({ affectedRows: 1 });
+
+      // Act
+      const result = await product.activate();
+
+      // Assert
+      expect(result.activo).toBe(true);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('activo = TRUE'),
+        [product.id]
+      );
+    });
+  });
+
+  describe('isInStock', () => {
+    test('debe retornar true si hay stock', () => {
+      // Arrange
+      const product = new Product({ ...mockData.products[0], stock: 10 });
+
+      // Act & Assert
+      expect(product.isInStock()).toBe(true);
+    });
+
+    test('debe retornar false si no hay stock', () => {
+      // Arrange
+      const product = new Product({ ...mockData.products[0], stock: 0 });
+
+      // Act & Assert
+      expect(product.isInStock()).toBe(false);
+    });
+  });
+
+  describe('isLowStock', () => {
+    test('debe retornar true si el stock está bajo', () => {
+      // Arrange
+      const product = new Product({ ...mockData.products[0], stock: 3 });
+
+      // Act & Assert
+      expect(product.isLowStock(5)).toBe(true);
+    });
+
+    test('debe retornar false si el stock no está bajo', () => {
+      // Arrange
+      const product = new Product({ ...mockData.products[0], stock: 10 });
+
+      // Act & Assert
+      expect(product.isLowStock(5)).toBe(false);
+    });
+  });
+
+  describe('getRelatedProducts', () => {
+    test('debe retornar productos relacionados', async () => {
+      // Arrange
+      const productData = { ...mockData.products[0], categoria_id: 1 };
+      const product = new Product(productData);
+      const relatedProducts = [{ ...mockData.products[1], categoria_id: 1 }];
+      executeQuery.mockResolvedValue(relatedProducts);
+
+      // Act
+      const products = await product.getRelatedProducts(5);
+
+      // Assert
+      expect(products).toBeInstanceOf(Array);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('categoria_id = ?'),
+        expect.arrayContaining([product.categoria_id])
+      );
+    });
+  });
+
   describe('getLowStockProducts', () => {
     test('debe retornar productos con stock bajo', async () => {
       // Arrange
@@ -237,6 +506,36 @@ describe('Product Model', () => {
         expect.stringContaining('stock <= ?'),
         [threshold]
       );
+    });
+  });
+
+  describe('getOutOfStockProducts', () => {
+    test('debe retornar productos sin stock', async () => {
+      // Arrange
+      const outOfStockProducts = [
+        { ...mockData.products[0], stock: 0 }
+      ];
+      executeQuery.mockResolvedValue(outOfStockProducts);
+
+      // Act
+      const products = await Product.getOutOfStockProducts();
+
+      // Assert
+      expect(products).toBeInstanceOf(Array);
+      // La query contiene "stock = 0" en algún lugar
+      expect(executeQuery).toHaveBeenCalled();
+      const callArgs = executeQuery.mock.calls[0];
+      expect(callArgs[0]).toMatch(/stock\s*=\s*0/i);
+    });
+  });
+
+  describe('update', () => {
+    test('debe rechazar actualización sin campos válidos', async () => {
+      // Arrange
+      const product = new Product(mockData.products[0]);
+
+      // Act & Assert
+      await expect(product.update({ campo_invalido: 'valor' })).rejects.toThrow('No hay campos válidos para actualizar');
     });
   });
 });

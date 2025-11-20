@@ -265,6 +265,147 @@ describe('Category Model', () => {
     });
   });
 
+  describe('findWithProducts', () => {
+    test('debe retornar categorías con productos', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([
+        { ...mockData.categories[0], productos_count: 5 }
+      ]);
+
+      // Act
+      const categories = await Category.findWithProducts();
+
+      // Assert
+      expect(categories).toBeInstanceOf(Array);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('INNER JOIN productos')
+      );
+    });
+  });
+
+  describe('update', () => {
+    test('debe actualizar campos permitidos correctamente', async () => {
+      // Arrange
+      const category = new Category(mockData.categories[0]);
+      const updateData = {
+        nombre: 'Categoría Actualizada',
+        descripcion: 'Nueva descripción'
+      };
+      
+      executeQuery
+        .mockResolvedValueOnce({ affectedRows: 1 })
+        .mockResolvedValueOnce([{
+          ...mockData.categories[0],
+          ...updateData
+        }]);
+
+      // Act
+      const updatedCategory = await category.update(updateData);
+
+      // Assert
+      expect(updatedCategory.nombre).toBe(updateData.nombre);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE categorias'),
+        expect.arrayContaining([updateData.nombre, category.id])
+      );
+    });
+
+    test('debe rechazar actualización sin campos válidos', async () => {
+      // Arrange
+      const category = new Category(mockData.categories[0]);
+
+      // Act & Assert
+      await expect(category.update({ campo_invalido: 'valor' })).rejects.toThrow('No hay campos válidos para actualizar');
+    });
+  });
+
+  describe('activate', () => {
+    test('debe activar una categoría correctamente', async () => {
+      // Arrange
+      const category = new Category({ ...mockData.categories[0], activo: false });
+      executeQuery.mockResolvedValue({ affectedRows: 1 });
+
+      // Act
+      const result = await category.activate();
+
+      // Assert
+      expect(result.activo).toBe(true);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('activo = TRUE'),
+        [category.id]
+      );
+    });
+  });
+
+  describe('getProducts', () => {
+    test('debe retornar productos de la categoría', async () => {
+      // Arrange
+      const category = new Category(mockData.categories[0]);
+      const mockProducts = [mockData.products[0]];
+      executeQuery.mockResolvedValue(mockProducts);
+
+      // Act
+      const products = await category.getProducts({ limit: 10, offset: 0 });
+
+      // Assert
+      expect(products).toBeInstanceOf(Array);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('WHERE p.categoria_id = ?'),
+        [category.id, 10, 0]
+      );
+    });
+
+    test('debe ordenar productos correctamente', async () => {
+      // Arrange
+      const category = new Category(mockData.categories[0]);
+      executeQuery.mockResolvedValue([mockData.products[0]]);
+
+      // Act
+      await category.getProducts({ orderBy: 'precio', orderDirection: 'DESC' });
+
+      // Assert
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('ORDER BY p.precio DESC'),
+        expect.any(Array)
+      );
+    });
+  });
+
+  describe('count', () => {
+    test('debe contar todas las categorías activas', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([{ total: 5 }]);
+
+      // Act
+      const count = await Category.count();
+
+      // Assert
+      expect(count).toBe(5);
+      expect(executeQuery).toHaveBeenCalled();
+      const callArgs = executeQuery.mock.calls[0];
+      expect(callArgs[0]).toContain('COUNT(*)');
+    });
+  });
+
+  describe('search', () => {
+    test('debe buscar categorías por término', async () => {
+      // Arrange
+      executeQuery.mockResolvedValue([
+        { ...mockData.categories[0], productos_count: 3 }
+      ]);
+
+      // Act
+      const categories = await Category.search('motor', 10, 0);
+
+      // Assert
+      expect(categories).toBeInstanceOf(Array);
+      expect(executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('LIKE ?'),
+        expect.arrayContaining(['%motor%', 10, 0])
+      );
+    });
+  });
+
   describe('toJSON', () => {
     test('debe retornar objeto JSON con campos correctos', () => {
       // Arrange
