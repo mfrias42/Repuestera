@@ -26,7 +26,7 @@ variables:
   apiUrlProd: 'https://repuestera-api-prod.azurewebsites.net/api'
   
   # Quality Gates - TP07
-  minCoveragePercentage: 70
+  minCoveragePercentage: 80
   sonarCloudOrganization: 'mfrias42' # Organización de SonarCloud
   sonarCloudProjectKey: 'repuestera' # Project key de SonarCloud
 
@@ -104,7 +104,7 @@ stages:
         else
           echo "✅ Coverage del backend cumple con el mínimo requerido"
         fi
-      displayName: 'Quality Gate: Verificar coverage backend >= 70%'
+      displayName: 'Quality Gate: Verificar coverage backend >= 80%'
       continueOnError: true
     
     - task: SonarCloudPrepare@1
@@ -227,7 +227,7 @@ stages:
         else
           echo "✅ Coverage del frontend cumple con el mínimo requerido"
         fi
-      displayName: 'Quality Gate: Verificar coverage frontend >= 70%'
+      displayName: 'Quality Gate: Verificar coverage frontend >= 80%'
       continueOnError: true
 
     - task: SonarCloudPrepare@1

@@ -92,10 +92,12 @@ describe('Login Component', () => {
 
   test('debe llamar a login cuando se envía el formulario', async () => {
     // Arrange
+    mockNavigate.mockClear();
     render(<LoginWithContext />);
     const emailInput = screen.getByLabelText(/correo electrónico/i);
     const passwordInput = screen.getByLabelText(/contraseña/i);
-    const submitButton = screen.getByRole('button', { name: /iniciar sesión/i });
+    const submitButtons = screen.getAllByRole('button', { name: /iniciar sesión/i });
+    const submitButton = submitButtons[submitButtons.length - 1]; // Tomar el último (el del formulario)
 
     // Act
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });

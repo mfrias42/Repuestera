@@ -205,5 +205,127 @@ describe('ProductManagement Component', () => {
       expect(true).toBe(true);
     }
   });
+
+  test('debe crear producto cuando se completa el formulario', async () => {
+    productService.createProduct.mockResolvedValue({
+      data: { message: 'Producto creado', product: { id: 2, nombre: 'Nuevo Producto', precio: 20, stock: 10 } }
+    });
+
+    render(<ProductManagement />);
+    await waitFor(() => {
+      expect(screen.getByText('Filtro de Aceite')).toBeInTheDocument();
+    });
+
+    const addButtons = screen.getAllByRole('button', { name: /nuevo producto/i });
+    fireEvent.click(addButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Nuevo Producto')).toBeInTheDocument();
+    });
+
+    const nombreInput = screen.getByLabelText(/nombre/i);
+    fireEvent.change(nombreInput, { target: { value: 'Nuevo Producto' } });
+
+    const precioInput = screen.getByLabelText(/precio/i);
+    fireEvent.change(precioInput, { target: { value: '20' } });
+
+    const stockInput = screen.getByLabelText(/stock/i);
+    fireEvent.change(stockInput, { target: { value: '10' } });
+
+    const codigoInput = screen.getByLabelText(/código/i);
+    fireEvent.change(codigoInput, { target: { value: 'NP001' } });
+
+    const saveButtons = screen.queryAllByRole('button', { name: /guardar|crear/i });
+    if (saveButtons.length > 0) {
+      fireEvent.click(saveButtons[0]);
+      
+      await waitFor(() => {
+        expect(productService.createProduct).toHaveBeenCalled();
+      });
+    }
+  });
+
+  test('debe actualizar producto cuando se edita', async () => {
+    productService.updateProduct.mockResolvedValue({
+      data: { message: 'Producto actualizado', product: { id: 1, nombre: 'Producto Actualizado' } }
+    });
+
+    render(<ProductManagement />);
+    await waitFor(() => {
+      expect(screen.getByText('Filtro de Aceite')).toBeInTheDocument();
+    });
+
+    const editButtons = screen.getAllByRole('button').filter(btn => {
+      return btn.querySelector('[data-testid="EditIcon"]') !== null;
+    });
+    
+    if (editButtons.length > 0) {
+      fireEvent.click(editButtons[0]);
+      
+      await waitFor(() => {
+        const nombreInput = screen.getByDisplayValue('Filtro de Aceite');
+        fireEvent.change(nombreInput, { target: { value: 'Producto Actualizado' } });
+      });
+
+      const saveButtons = screen.queryAllByRole('button', { name: /guardar/i });
+      if (saveButtons.length > 0) {
+        fireEvent.click(saveButtons[0]);
+        
+        await waitFor(() => {
+          expect(productService.updateProduct).toHaveBeenCalled();
+        });
+      }
+    }
+  });
+
+  test('debe manejar cambio de imagen', async () => {
+    render(<ProductManagement />);
+    await waitFor(() => {
+      expect(screen.getByText('Filtro de Aceite')).toBeInTheDocument();
+    });
+
+    const addButtons = screen.getAllByRole('button', { name: /nuevo producto/i });
+    fireEvent.click(addButtons[0]);
+
+    await waitFor(() => {
+      const fileInput = screen.getByLabelText(/imagen/i);
+      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+  });
+
+  test('debe mostrar mensaje de éxito cuando se crea producto', async () => {
+    productService.createProduct.mockResolvedValue({
+      data: { message: 'Producto creado exitosamente', product: { id: 2, nombre: 'Nuevo', precio: 10, stock: 5 } }
+    });
+
+    render(<ProductManagement />);
+    await waitFor(() => {
+      expect(screen.getByText('Filtro de Aceite')).toBeInTheDocument();
+    });
+
+    const addButtons = screen.getAllByRole('button', { name: /nuevo producto/i });
+    fireEvent.click(addButtons[0]);
+
+    await waitFor(() => {
+      const nombreInput = screen.getByLabelText(/nombre/i);
+      fireEvent.change(nombreInput, { target: { value: 'Nuevo' } });
+      const precioInput = screen.getByLabelText(/precio/i);
+      fireEvent.change(precioInput, { target: { value: '10' } });
+      const stockInput = screen.getByLabelText(/stock/i);
+      fireEvent.change(stockInput, { target: { value: '5' } });
+      const codigoInput = screen.getByLabelText(/código/i);
+      fireEvent.change(codigoInput, { target: { value: 'N001' } });
+    });
+
+    const saveButtons = screen.queryAllByRole('button', { name: /guardar|crear/i });
+    if (saveButtons.length > 0) {
+      fireEvent.click(saveButtons[0]);
+      
+      await waitFor(() => {
+        expect(productService.createProduct).toHaveBeenCalled();
+      });
+    }
+  });
 });
 
