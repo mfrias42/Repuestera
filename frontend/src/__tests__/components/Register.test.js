@@ -2,21 +2,33 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Register from '../../pages/Register';
-import { AuthContext } from '../../context/AuthContext';
+import AuthContext from '../../context/AuthContext';
 
 const mockRegister = jest.fn();
 const mockNavigate = jest.fn();
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-  Link: ({ children, to }) => <a href={to}>{children}</a>
-}));
+jest.mock('react-router-dom', () => {
+  const actual = jest.requireActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+    Link: ({ children, to, ...props }) => <a href={to} {...props}>{children}</a>
+  };
+});
 
 const renderWithProviders = (component) => {
   return render(
     <BrowserRouter>
-      <AuthContext.Provider value={{ register: mockRegister }}>
+      <AuthContext.Provider value={{ 
+        register: mockRegister,
+        user: null,
+        isAuthenticated: false,
+        loading: false,
+        login: jest.fn(),
+        logout: jest.fn(),
+        isAdmin: () => false,
+        isSuperAdmin: () => false
+      }}>
         {component}
       </AuthContext.Provider>
     </BrowserRouter>
@@ -111,6 +123,7 @@ describe('Register Component', () => {
 
   it('debe mostrar mensaje de éxito después de registro exitoso', async () => {
     mockRegister.mockResolvedValue({});
+    jest.useFakeTimers();
     
     renderWithProviders(<Register />);
     
@@ -125,6 +138,9 @@ describe('Register Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/usuario registrado exitosamente/i)).toBeInTheDocument();
     });
+    
+    jest.advanceTimersByTime(2000);
+    jest.useRealTimers();
   });
 
   it('debe mostrar campos opcionales (teléfono y dirección)', () => {

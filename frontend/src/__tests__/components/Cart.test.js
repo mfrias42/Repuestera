@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Cart from '../../pages/Cart';
-import { CartContext } from '../../context/CartContext';
+import CartContext from '../../context/CartContext';
 
 const mockNavigate = jest.fn();
 const mockUpdateQuantity = jest.fn();
@@ -34,19 +34,24 @@ const mockItems = [
 ];
 
 const renderWithProviders = (items = mockItems) => {
+  const total = items.reduce((sum, item) => sum + (item.precio * item.quantity), 0);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  
   return render(
     <BrowserRouter>
       <CartContext.Provider value={{
         items: items,
-        total: items.reduce((sum, item) => sum + (item.precio * item.quantity), 0),
-        itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+        total: total,
+        itemCount: itemCount,
         updateQuantity: mockUpdateQuantity,
         removeFromCart: mockRemoveFromCart,
         clearCart: mockClearCart,
         getItemQuantity: jest.fn((id) => {
           const item = items.find(i => i.id === id);
           return item ? item.quantity : 0;
-        })
+        }),
+        addToCart: jest.fn(),
+        isInCart: jest.fn((id) => items.some(i => i.id === id))
       }}>
         <Cart />
       </CartContext.Provider>

@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Products from '../../pages/Products';
-import { CartContext } from '../../context/CartContext';
+import CartContext from '../../context/CartContext';
 import { productService } from '../../services/api';
 
 jest.mock('../../services/api', () => ({
@@ -19,7 +19,14 @@ const renderWithProviders = (component) => {
     <BrowserRouter>
       <CartContext.Provider value={{
         addToCart: mockAddToCart,
-        getItemQuantity: mockGetItemQuantity
+        getItemQuantity: mockGetItemQuantity,
+        items: [],
+        total: 0,
+        itemCount: 0,
+        removeFromCart: jest.fn(),
+        updateQuantity: jest.fn(),
+        clearCart: jest.fn(),
+        isInCart: jest.fn(() => false)
       }}>
         {component}
       </CartContext.Provider>

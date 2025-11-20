@@ -24,7 +24,11 @@ describe('AuthContext', () => {
   it('debe inicializar con usuario no autenticado', async () => {
     authService.getMe.mockRejectedValue(new Error('No token'));
     
-    const { result } = renderHook(() => useAuth(), { wrapper });
+    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
+    
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
     
     expect(result.current.isAuthenticated).toBe(false);
     expect(result.current.user).toBe(null);
@@ -36,9 +40,11 @@ describe('AuthContext', () => {
     localStorage.setItem('user', JSON.stringify(userData));
     authService.getMe.mockResolvedValue({ data: userData });
     
-    const { result, waitForNextUpdate } = renderHook(() => useAuth(), { wrapper });
+    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
     
-    await waitForNextUpdate();
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
     
     expect(result.current.isAuthenticated).toBe(true);
     expect(result.current.user).toEqual(userData);
@@ -50,9 +56,11 @@ describe('AuthContext', () => {
     localStorage.setItem('user', JSON.stringify(userData));
     authService.getMe.mockRejectedValue(new Error('Invalid token'));
     
-    const { result, waitForNextUpdate } = renderHook(() => useAuth(), { wrapper });
+    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
     
-    await waitForNextUpdate();
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
     
     expect(result.current.isAuthenticated).toBe(false);
     expect(localStorage.getItem('token')).toBeNull();
@@ -134,45 +142,51 @@ describe('AuthContext', () => {
     expect(localStorage.getItem('token')).toBeNull();
   });
 
-  it('debe identificar correctamente si el usuario es admin', () => {
+  it('debe identificar correctamente si el usuario es admin', async () => {
     const userData = { id: 1, nombre: 'Admin', rol: 'admin' };
     localStorage.setItem('token', 'token');
     localStorage.setItem('user', JSON.stringify(userData));
     authService.getMe.mockResolvedValue({ data: userData });
     
-    const { result, waitForNextUpdate } = renderHook(() => useAuth(), { wrapper });
+    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
     
-    return waitForNextUpdate().then(() => {
-      expect(result.current.isAdmin()).toBe(true);
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
     });
+    
+    expect(result.current.isAdmin()).toBe(true);
   });
 
-  it('debe identificar correctamente si el usuario es super admin', () => {
+  it('debe identificar correctamente si el usuario es super admin', async () => {
     const userData = { id: 1, nombre: 'Super Admin', rol: 'super_admin' };
     localStorage.setItem('token', 'token');
     localStorage.setItem('user', JSON.stringify(userData));
     authService.getMe.mockResolvedValue({ data: userData });
     
-    const { result, waitForNextUpdate } = renderHook(() => useAuth(), { wrapper });
+    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
     
-    return waitForNextUpdate().then(() => {
-      expect(result.current.isSuperAdmin()).toBe(true);
-      expect(result.current.isAdmin()).toBe(true);
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
     });
+    
+    expect(result.current.isSuperAdmin()).toBe(true);
+    expect(result.current.isAdmin()).toBe(true);
   });
 
-  it('debe retornar false para isAdmin cuando el usuario no es admin', () => {
+  it('debe retornar false para isAdmin cuando el usuario no es admin', async () => {
     const userData = { id: 1, nombre: 'User', rol: 'user' };
     localStorage.setItem('token', 'token');
     localStorage.setItem('user', JSON.stringify(userData));
     authService.getMe.mockResolvedValue({ data: userData });
     
-    const { result, waitForNextUpdate } = renderHook(() => useAuth(), { wrapper });
+    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
     
-    return waitForNextUpdate().then(() => {
-      expect(result.current.isAdmin()).toBe(false);
-      expect(result.current.isSuperAdmin()).toBe(false);
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
     });
+    
+    expect(result.current.isAdmin()).toBe(false);
+    expect(result.current.isSuperAdmin()).toBe(false);
   });
 });
 

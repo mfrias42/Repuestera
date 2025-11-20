@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Profile from '../../pages/Profile';
-import { AuthContext } from '../../context/AuthContext';
+import AuthContext from '../../context/AuthContext';
 import { userService } from '../../services/api';
 
 jest.mock('../../services/api', () => ({
@@ -18,7 +18,15 @@ const renderWithProviders = (user) => {
     <BrowserRouter>
       <AuthContext.Provider value={{
         user: user,
-        updateUser: mockUpdateUser
+        updateUser: mockUpdateUser,
+        isAuthenticated: !!user,
+        loading: false,
+        login: jest.fn(),
+        register: jest.fn(),
+        logout: jest.fn(),
+        isAdmin: () => false,
+        isSuperAdmin: () => false,
+        checkAuthStatus: jest.fn()
       }}>
         <Profile />
       </AuthContext.Provider>

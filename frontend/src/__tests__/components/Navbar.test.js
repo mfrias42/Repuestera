@@ -2,8 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
-import { AuthContext } from '../../context/AuthContext';
-import { CartContext } from '../../context/CartContext';
+import AuthContext from '../../context/AuthContext';
+import CartContext from '../../context/CartContext';
 
 const mockNavigate = jest.fn();
 const mockLogout = jest.fn();
@@ -14,10 +14,22 @@ jest.mock('react-router-dom', () => ({
 }));
 
 const renderWithProviders = (authValue, cartValue = { itemCount: 0 }) => {
+  const fullCartValue = {
+    itemCount: cartValue.itemCount || 0,
+    items: cartValue.items || [],
+    total: cartValue.total || 0,
+    addToCart: cartValue.addToCart || jest.fn(),
+    removeFromCart: cartValue.removeFromCart || jest.fn(),
+    updateQuantity: cartValue.updateQuantity || jest.fn(),
+    clearCart: cartValue.clearCart || jest.fn(),
+    getItemQuantity: cartValue.getItemQuantity || jest.fn(() => 0),
+    isInCart: cartValue.isInCart || jest.fn(() => false)
+  };
+  
   return render(
     <BrowserRouter>
       <AuthContext.Provider value={authValue}>
-        <CartContext.Provider value={cartValue}>
+        <CartContext.Provider value={fullCartValue}>
           <Navbar />
         </CartContext.Provider>
       </AuthContext.Provider>
