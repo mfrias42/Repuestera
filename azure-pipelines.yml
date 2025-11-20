@@ -319,7 +319,120 @@ stages:
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del frontend Producción'
 
-  # Job 4: Pruebas E2E con Cypress - TP07
+  # Job 4: Quality Gate Combinado - Verificar coverage total (backend + frontend)
+  - job: QualityGateCombined
+    displayName: 'Quality Gate: Coverage Combinado'
+    pool:
+      vmImage: 'ubuntu-latest'
+    dependsOn: 
+      - BuildBackend
+      - BuildFrontendQA
+    condition: succeeded()
+    
+    steps:
+    - download: current
+      artifact: backend-drop
+      displayName: 'Download Backend Artifact'
+    
+    - download: current
+      artifact: frontend-qa-drop
+      displayName: 'Download Frontend Artifact'
+    
+    - script: |
+        # Extraer artefactos para acceder a los archivos de coverage
+        cd $(Pipeline.Workspace)/backend-drop
+        unzip -q backend.zip -d extracted-backend || true
+        
+        cd $(Pipeline.Workspace)/frontend-qa-drop
+        unzip -q frontend-qa.zip -d extracted-frontend || true
+        
+        # Buscar archivos de coverage en los artefactos o en el workspace
+        BACKEND_COV_FILE=""
+        FRONTEND_COV_FILE=""
+        
+        # Intentar encontrar en artefactos extraídos
+        if [ -f "$(Pipeline.Workspace)/backend-drop/extracted-backend/backend/coverage/lcov.info" ]; then
+          BACKEND_COV_FILE="$(Pipeline.Workspace)/backend-drop/extracted-backend/backend/coverage/lcov.info"
+        elif [ -f "backend/coverage/lcov.info" ]; then
+          BACKEND_COV_FILE="backend/coverage/lcov.info"
+        fi
+        
+        if [ -f "$(Pipeline.Workspace)/frontend-qa-drop/extracted-frontend/frontend/coverage/lcov.info" ]; then
+          FRONTEND_COV_FILE="$(Pipeline.Workspace)/frontend-qa-drop/extracted-frontend/frontend/coverage/lcov.info"
+        elif [ -f "frontend/coverage/lcov.info" ]; then
+          FRONTEND_COV_FILE="frontend/coverage/lcov.info"
+        fi
+        
+        # Si no encontramos en artefactos, usar los archivos del workspace del build
+        if [ -z "$BACKEND_COV_FILE" ] && [ -f "$(Agent.BuildDirectory)/backend/coverage/lcov.info" ]; then
+          BACKEND_COV_FILE="$(Agent.BuildDirectory)/backend/coverage/lcov.info"
+        fi
+        
+        if [ -z "$FRONTEND_COV_FILE" ] && [ -f "$(Agent.BuildDirectory)/frontend/coverage/lcov.info" ]; then
+          FRONTEND_COV_FILE="$(Agent.BuildDirectory)/frontend/coverage/lcov.info"
+        fi
+        
+        echo "Backend coverage file: ${BACKEND_COV_FILE:-NOT FOUND}"
+        echo "Frontend coverage file: ${FRONTEND_COV_FILE:-NOT FOUND}"
+        
+        if [ -z "$BACKEND_COV_FILE" ] || [ ! -f "$BACKEND_COV_FILE" ]; then
+          echo "##[error]No se encontró el archivo backend/coverage/lcov.info"
+          exit 1
+        fi
+        
+        if [ -z "$FRONTEND_COV_FILE" ] || [ ! -f "$FRONTEND_COV_FILE" ]; then
+          echo "##[error]No se encontró el archivo frontend/coverage/lcov.info"
+          exit 1
+        fi
+        
+        # Calcular coverage del backend
+        BACKEND_TOTAL=$(grep -h "^LF:" "$BACKEND_COV_FILE" | awk -F: '{sum+=$2} END {print sum+0}')
+        BACKEND_HIT=$(grep -h "^LH:" "$BACKEND_COV_FILE" | awk -F: '{sum+=$2} END {print sum+0}')
+        
+        # Calcular coverage del frontend
+        FRONTEND_TOTAL=$(grep -h "^LF:" "$FRONTEND_COV_FILE" | awk -F: '{sum+=$2} END {print sum+0}')
+        FRONTEND_HIT=$(grep -h "^LH:" "$FRONTEND_COV_FILE" | awk -F: '{sum+=$2} END {print sum+0}')
+        
+        # Calcular coverage combinado
+        TOTAL_LINES=$((BACKEND_TOTAL + FRONTEND_TOTAL))
+        HIT_LINES=$((BACKEND_HIT + FRONTEND_HIT))
+        
+        if [ -z "$TOTAL_LINES" ] || [ "$TOTAL_LINES" -eq 0 ]; then
+          COMBINED_COVERAGE=0.00
+        else
+          COMBINED_COVERAGE=$(awk "BEGIN {printf \"%.2f\", ($HIT_LINES / $TOTAL_LINES) * 100}")
+        fi
+        
+        # Calcular coverage individual para mostrar
+        if [ -z "$BACKEND_TOTAL" ] || [ "$BACKEND_TOTAL" -eq 0 ]; then
+          BACKEND_COVERAGE=0.00
+        else
+          BACKEND_COVERAGE=$(awk "BEGIN {printf \"%.2f\", ($BACKEND_HIT / $BACKEND_TOTAL) * 100}")
+        fi
+        
+        if [ -z "$FRONTEND_TOTAL" ] || [ "$FRONTEND_TOTAL" -eq 0 ]; then
+          FRONTEND_COVERAGE=0.00
+        else
+          FRONTEND_COVERAGE=$(awk "BEGIN {printf \"%.2f\", ($FRONTEND_HIT / $FRONTEND_TOTAL) * 100}")
+        fi
+        
+        echo "##[section]Resumen de Coverage"
+        echo "Backend coverage: ${BACKEND_COVERAGE}% (${BACKEND_HIT}/${BACKEND_TOTAL} líneas)"
+        echo "Frontend coverage: ${FRONTEND_COVERAGE}% (${FRONTEND_HIT}/${FRONTEND_TOTAL} líneas)"
+        echo "Coverage combinado: ${COMBINED_COVERAGE}% (${HIT_LINES}/${TOTAL_LINES} líneas)"
+        echo "Coverage mínimo requerido: $(minCoveragePercentage)%"
+        
+        if (( $(echo "$COMBINED_COVERAGE < $(minCoveragePercentage)" | bc -l) )); then
+          echo "##[error]Coverage combinado (${COMBINED_COVERAGE}%) es menor al mínimo requerido ($(minCoveragePercentage)%)"
+          echo "##[error]El pipeline se detendrá. Por favor, mejore el coverage antes de continuar."
+          exit 1
+        else
+          echo "✅ Coverage combinado cumple con el mínimo requerido (${COMBINED_COVERAGE}% >= $(minCoveragePercentage)%)"
+        fi
+      displayName: 'Quality Gate: Verificar coverage combinado >= 78%'
+      continueOnError: false
+
+  # Job 5: Pruebas E2E con Cypress - TP07
   - job: E2ETests
     displayName: 'Pruebas E2E con Cypress'
     pool:
@@ -327,6 +440,7 @@ stages:
     dependsOn: 
       - BuildBackend
       - BuildFrontendQA
+      - QualityGateCombined
     condition: succeeded()
     
     steps:
