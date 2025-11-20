@@ -147,6 +147,14 @@ stages:
         ArtifactName: 'backend-drop'
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del backend'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: 'backend/coverage'
+        ArtifactName: 'backend-coverage'
+        publishLocation: 'Container'
+      displayName: 'Publicar coverage del backend'
+      condition: always()
 
   # Job 2: Frontend QA - Se ejecuta en paralelo con Backend (tests + build con URL de QA)
   - job: BuildFrontendQA
