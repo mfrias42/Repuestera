@@ -2,15 +2,15 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Admin from '../../pages/Admin';
-import { AuthContext } from '../../context/AuthContext';
+import AuthContext from '../../context/AuthContext';
 
-jest.mock('../components/ProductManagement', () => {
+jest.mock('../../components/ProductManagement', () => {
   return function MockProductManagement() {
     return <div>Product Management</div>;
   };
 });
 
-jest.mock('../components/UserManagement', () => {
+jest.mock('../../components/UserManagement', () => {
   return function MockUserManagement() {
     return <div>User Management</div>;
   };

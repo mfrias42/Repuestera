@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Cart from '../../pages/Cart';
-import CartContext from '../../context/CartContext';
+import { CartContext } from '../../context/CartContext';
 
 const mockNavigate = jest.fn();
 const mockUpdateQuantity = jest.fn();

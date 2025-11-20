@@ -1,5 +1,5 @@
 import React from 'react';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/api';
 
@@ -24,7 +24,7 @@ describe('AuthContext', () => {
   it('debe inicializar con usuario no autenticado', async () => {
     authService.getMe.mockRejectedValue(new Error('No token'));
     
-    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
+    const { result } = renderHook(() => useAuth(), { wrapper });
     
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -40,7 +40,7 @@ describe('AuthContext', () => {
     localStorage.setItem('user', JSON.stringify(userData));
     authService.getMe.mockResolvedValue({ data: userData });
     
-    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
+    const { result } = renderHook(() => useAuth(), { wrapper });
     
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -56,7 +56,7 @@ describe('AuthContext', () => {
     localStorage.setItem('user', JSON.stringify(userData));
     authService.getMe.mockRejectedValue(new Error('Invalid token'));
     
-    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
+    const { result } = renderHook(() => useAuth(), { wrapper });
     
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -148,7 +148,7 @@ describe('AuthContext', () => {
     localStorage.setItem('user', JSON.stringify(userData));
     authService.getMe.mockResolvedValue({ data: userData });
     
-    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
+    const { result } = renderHook(() => useAuth(), { wrapper });
     
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -163,7 +163,7 @@ describe('AuthContext', () => {
     localStorage.setItem('user', JSON.stringify(userData));
     authService.getMe.mockResolvedValue({ data: userData });
     
-    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
+    const { result } = renderHook(() => useAuth(), { wrapper });
     
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -179,7 +179,7 @@ describe('AuthContext', () => {
     localStorage.setItem('user', JSON.stringify(userData));
     authService.getMe.mockResolvedValue({ data: userData });
     
-    const { result, waitFor } = renderHook(() => useAuth(), { wrapper });
+    const { result } = renderHook(() => useAuth(), { wrapper });
     
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
