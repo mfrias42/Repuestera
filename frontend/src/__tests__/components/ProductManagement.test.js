@@ -256,7 +256,9 @@ describe('ProductManagement Component', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Nuevo Producto')).toBeInTheDocument();
+      // Buscar el título del diálogo específicamente (no el botón)
+      const dialogTitle = screen.getByRole('heading', { name: /nuevo producto/i });
+      expect(dialogTitle).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -366,7 +368,9 @@ describe('ProductManagement Component', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Nuevo Producto')).toBeInTheDocument();
+      // Buscar el título del diálogo específicamente (no el botón)
+      const dialogTitle = screen.getByRole('heading', { name: /nuevo producto/i });
+      expect(dialogTitle).toBeInTheDocument();
     });
 
     await act(async () => {
