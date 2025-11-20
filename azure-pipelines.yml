@@ -274,6 +274,14 @@ stages:
         ArtifactName: 'frontend-qa-drop'
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del frontend QA'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: 'frontend/coverage'
+        ArtifactName: 'frontend-coverage'
+        publishLocation: 'Container'
+      displayName: 'Publicar coverage del frontend'
+      condition: always()
 
   # Job 3: Frontend Producción - Se ejecuta en paralelo (solo build con URL de producción)
   # NOTA: Builds separados son NECESARIOS porque el frontend necesita diferentes URLs de API
@@ -331,45 +339,29 @@ stages:
     
     steps:
     - download: current
-      artifact: backend-drop
-      displayName: 'Download Backend Artifact'
+      artifact: backend-coverage
+      displayName: 'Download Backend Coverage'
     
     - download: current
-      artifact: frontend-qa-drop
-      displayName: 'Download Frontend Artifact'
+      artifact: frontend-coverage
+      displayName: 'Download Frontend Coverage'
     
     - script: |
-        # Extraer artefactos para acceder a los archivos de coverage
-        cd $(Pipeline.Workspace)/backend-drop
-        unzip -q backend.zip -d extracted-backend || true
-        
-        cd $(Pipeline.Workspace)/frontend-qa-drop
-        unzip -q frontend-qa.zip -d extracted-frontend || true
-        
-        # Buscar archivos de coverage en los artefactos o en el workspace
+        # Buscar archivos de coverage en los artefactos descargados
         BACKEND_COV_FILE=""
         FRONTEND_COV_FILE=""
         
-        # Intentar encontrar en artefactos extraídos
-        if [ -f "$(Pipeline.Workspace)/backend-drop/extracted-backend/backend/coverage/lcov.info" ]; then
-          BACKEND_COV_FILE="$(Pipeline.Workspace)/backend-drop/extracted-backend/backend/coverage/lcov.info"
-        elif [ -f "backend/coverage/lcov.info" ]; then
-          BACKEND_COV_FILE="backend/coverage/lcov.info"
+        # Buscar en artefactos descargados
+        if [ -f "$(Pipeline.Workspace)/backend-coverage/lcov.info" ]; then
+          BACKEND_COV_FILE="$(Pipeline.Workspace)/backend-coverage/lcov.info"
+        elif [ -f "$(Pipeline.Workspace)/backend-coverage/backend/coverage/lcov.info" ]; then
+          BACKEND_COV_FILE="$(Pipeline.Workspace)/backend-coverage/backend/coverage/lcov.info"
         fi
         
-        if [ -f "$(Pipeline.Workspace)/frontend-qa-drop/extracted-frontend/frontend/coverage/lcov.info" ]; then
-          FRONTEND_COV_FILE="$(Pipeline.Workspace)/frontend-qa-drop/extracted-frontend/frontend/coverage/lcov.info"
-        elif [ -f "frontend/coverage/lcov.info" ]; then
-          FRONTEND_COV_FILE="frontend/coverage/lcov.info"
-        fi
-        
-        # Si no encontramos en artefactos, usar los archivos del workspace del build
-        if [ -z "$BACKEND_COV_FILE" ] && [ -f "$(Agent.BuildDirectory)/backend/coverage/lcov.info" ]; then
-          BACKEND_COV_FILE="$(Agent.BuildDirectory)/backend/coverage/lcov.info"
-        fi
-        
-        if [ -z "$FRONTEND_COV_FILE" ] && [ -f "$(Agent.BuildDirectory)/frontend/coverage/lcov.info" ]; then
-          FRONTEND_COV_FILE="$(Agent.BuildDirectory)/frontend/coverage/lcov.info"
+        if [ -f "$(Pipeline.Workspace)/frontend-coverage/lcov.info" ]; then
+          FRONTEND_COV_FILE="$(Pipeline.Workspace)/frontend-coverage/lcov.info"
+        elif [ -f "$(Pipeline.Workspace)/frontend-coverage/frontend/coverage/lcov.info" ]; then
+          FRONTEND_COV_FILE="$(Pipeline.Workspace)/frontend-coverage/frontend/coverage/lcov.info"
         fi
         
         echo "Backend coverage file: ${BACKEND_COV_FILE:-NOT FOUND}"
@@ -377,11 +369,13 @@ stages:
         
         if [ -z "$BACKEND_COV_FILE" ] || [ ! -f "$BACKEND_COV_FILE" ]; then
           echo "##[error]No se encontró el archivo backend/coverage/lcov.info"
+          ls -la $(Pipeline.Workspace)/backend-coverage/ || echo "Directorio backend-coverage no existe"
           exit 1
         fi
         
         if [ -z "$FRONTEND_COV_FILE" ] || [ ! -f "$FRONTEND_COV_FILE" ]; then
           echo "##[error]No se encontró el archivo frontend/coverage/lcov.info"
+          ls -la $(Pipeline.Workspace)/frontend-coverage/ || echo "Directorio frontend-coverage no existe"
           exit 1
         fi
         
