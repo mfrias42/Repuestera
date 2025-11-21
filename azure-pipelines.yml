@@ -350,6 +350,9 @@ stages:
       - BuildBackend
       - BuildFrontendQA
     condition: succeeded()
+    # Ejecutar tests en paralelo para mejor rendimiento
+    strategy:
+      parallel: 2
     
     steps:
     - task: NodeTool@0
@@ -357,9 +360,27 @@ stages:
         versionSpec: $(nodeVersion)
       displayName: 'Instalar Node.js $(nodeVersion)'
 
+    # Caché de dependencias npm para acelerar builds
+    - task: CacheBeta@1
+      inputs:
+        key: npm | $(Agent.OS) | frontend/package-lock.json
+        path: /home/vsts/.npm
+        restoreKeys: |
+          npm | $(Agent.OS)
+      displayName: 'Cache npm dependencies'
+
+    # Caché de Cypress binaries para acelerar instalación
+    - task: CacheBeta@1
+      inputs:
+        key: cy | $(Agent.OS) | frontend/package-lock.json
+        path: /home/vsts/.cache/Cypress
+        restoreKeys: |
+          cy | $(Agent.OS)
+      displayName: 'Cache Cypress binaries'
+
     - script: |
         cd frontend
-        npm install
+        npm ci --prefer-offline
       displayName: 'Instalar dependencias del frontend'
 
     - script: |
@@ -425,13 +446,15 @@ stages:
         curl -f http://localhost:8000/api/health || echo "⚠️ Backend puede no estar listo"
         echo "Verificando que frontend está corriendo..."
         curl -f http://localhost:3000 || echo "⚠️ Frontend puede no estar listo"
-        # Ejecutar Cypress con manejo de errores
-        npm run cypress:run:headless || echo "⚠️ Algunos tests fallaron, pero continuando..."
-      displayName: 'Ejecutar pruebas E2E con Cypress'
+        # Ejecutar Cypress con recording y paralelización para Cypress Cloud
+        # También genera reporte JUnit para Azure DevOps
+        npx cypress run --record --parallel --ci-build-id $(Build.BuildNumber) --reporter junit --reporter-options 'mochaFile=cypress/results/results.xml' || echo "⚠️ Algunos tests fallaron, pero continuando..."
+      displayName: 'Ejecutar pruebas E2E con Cypress (Cloud + Azure DevOps)'
       continueOnError: true
       env:
         CYPRESS_baseUrl: 'http://localhost:3000'
         CYPRESS_apiUrl: 'http://localhost:8000/api'
+        CYPRESS_RECORD_KEY: $(CYPRESS_RECORD_KEY)
 
     - task: PublishTestResults@2
       condition: always()
