@@ -445,13 +445,12 @@ stages:
         curl -f http://localhost:3000 || echo "⚠️ Frontend puede no estar listo"
         # Ejecutar Cypress con recording para Cypress Cloud
         # También genera reporte JUnit para Azure DevOps
-        npx cypress run --record --ci-build-id $(Build.BuildNumber) --reporter junit --reporter-options 'mochaFile=cypress/results/results.xml' || echo "⚠️ Algunos tests fallaron, pero continuando..."
+        npx cypress run --record --key cedda1b7-3a98-4010-abf8-8b18c325d78f --ci-build-id $(Build.BuildNumber) --reporter junit --reporter-options 'mochaFile=cypress/results/results.xml' || echo "⚠️ Algunos tests fallaron, pero continuando..."
       displayName: 'Ejecutar pruebas E2E con Cypress (Cloud + Azure DevOps)'
       continueOnError: true
       env:
         CYPRESS_baseUrl: 'http://localhost:3000'
         CYPRESS_apiUrl: 'http://localhost:8000/api'
-        CYPRESS_RECORD_KEY: $(CYPRESS_RECORD_KEY)
 
     - task: PublishTestResults@2
       condition: always()
