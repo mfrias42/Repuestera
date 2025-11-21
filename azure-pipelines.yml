@@ -431,7 +431,7 @@ stages:
         else
           echo "✅ Coverage combinado cumple con el mínimo requerido (${COMBINED_COVERAGE}% >= $(minCoveragePercentage)%)"
         fi
-      displayName: 'Quality Gate: Verificar coverage combinado >= 78%'
+      displayName: 'Quality Gate: Verificar coverage combinado >= 58%'
       continueOnError: false
 
   # Job 5: Pruebas E2E con Cypress - TP07
