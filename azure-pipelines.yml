@@ -563,7 +563,8 @@ stages:
     steps:
     - script: |
         echo "##[section]Verificando Quality Gates"
-        echo "Coverage mínimo requerido: $(minCoveragePercentage)%"
+        echo "Coverage mínimo requerido Backend: $(minCoveragePercentageBackend)%"
+        echo "Coverage mínimo requerido Frontend: $(minCoveragePercentageFrontend)%"
         echo "SonarCloud Organization: $(sonarCloudOrganization)"
         echo "SonarCloud Project Key: $(sonarCloudProjectKey)"
         echo "✅ Quality Gates configurados correctamente"
