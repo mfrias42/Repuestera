@@ -26,7 +26,8 @@ variables:
   apiUrlProd: 'https://repuestera-api-prod.azurewebsites.net/api'
   
   # Quality Gates - TP07
-  minCoveragePercentage: 58  # Coverage mínimo requerido: 58%
+  minCoveragePercentageBackend: 50  # Coverage mínimo requerido para backend: 50%
+  minCoveragePercentageFrontend: 78  # Coverage mínimo requerido para frontend: 78%
   sonarCloudOrganization: 'mfrias42' # Organización de SonarCloud
   sonarCloudProjectKey: 'repuestera' # Project key de SonarCloud
 
@@ -335,9 +336,9 @@ stages:
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del frontend Producción'
 
-  # Job 4: Quality Gate Combinado - Verificar coverage total (backend + frontend)
-  - job: QualityGateCombined
-    displayName: 'Quality Gate: Coverage Combinado'
+  # Job 4: Quality Gate Separado - Verificar coverage de backend y frontend por separado
+  - job: QualityGateSeparate
+    displayName: 'Quality Gate: Coverage Separado'
     pool:
       vmImage: 'ubuntu-latest'
     dependsOn: 
@@ -395,17 +396,7 @@ stages:
         FRONTEND_TOTAL=$(grep -h "^LF:" "$FRONTEND_COV_FILE" | awk -F: '{sum+=$2} END {print sum+0}')
         FRONTEND_HIT=$(grep -h "^LH:" "$FRONTEND_COV_FILE" | awk -F: '{sum+=$2} END {print sum+0}')
         
-        # Calcular coverage combinado
-        TOTAL_LINES=$((BACKEND_TOTAL + FRONTEND_TOTAL))
-        HIT_LINES=$((BACKEND_HIT + FRONTEND_HIT))
-        
-        if [ -z "$TOTAL_LINES" ] || [ "$TOTAL_LINES" -eq 0 ]; then
-          COMBINED_COVERAGE=0.00
-        else
-          COMBINED_COVERAGE=$(awk "BEGIN {printf \"%.2f\", ($HIT_LINES / $TOTAL_LINES) * 100}")
-        fi
-        
-        # Calcular coverage individual para mostrar
+        # Calcular coverage individual
         if [ -z "$BACKEND_TOTAL" ] || [ "$BACKEND_TOTAL" -eq 0 ]; then
           BACKEND_COVERAGE=0.00
         else
@@ -421,17 +412,36 @@ stages:
         echo "##[section]Resumen de Coverage"
         echo "Backend coverage: ${BACKEND_COVERAGE}% (${BACKEND_HIT}/${BACKEND_TOTAL} líneas)"
         echo "Frontend coverage: ${FRONTEND_COVERAGE}% (${FRONTEND_HIT}/${FRONTEND_TOTAL} líneas)"
-        echo "Coverage combinado: ${COMBINED_COVERAGE}% (${HIT_LINES}/${TOTAL_LINES} líneas)"
-        echo "Coverage mínimo requerido: $(minCoveragePercentage)%"
+        echo ""
+        echo "Coverage mínimo requerido Backend: $(minCoveragePercentageBackend)%"
+        echo "Coverage mínimo requerido Frontend: $(minCoveragePercentageFrontend)%"
         
-        if (( $(echo "$COMBINED_COVERAGE < $(minCoveragePercentage)" | bc -l) )); then
-          echo "##[error]Coverage combinado (${COMBINED_COVERAGE}%) es menor al mínimo requerido ($(minCoveragePercentage)%)"
+        # Verificar backend
+        BACKEND_PASSED=true
+        if (( $(echo "$BACKEND_COVERAGE < $(minCoveragePercentageBackend)" | bc -l) )); then
+          echo "##[error]Backend coverage (${BACKEND_COVERAGE}%) es menor al mínimo requerido ($(minCoveragePercentageBackend)%)"
+          BACKEND_PASSED=false
+        else
+          echo "✅ Backend coverage cumple con el mínimo requerido (${BACKEND_COVERAGE}% >= $(minCoveragePercentageBackend)%)"
+        fi
+        
+        # Verificar frontend
+        FRONTEND_PASSED=true
+        if (( $(echo "$FRONTEND_COVERAGE < $(minCoveragePercentageFrontend)" | bc -l) )); then
+          echo "##[error]Frontend coverage (${FRONTEND_COVERAGE}%) es menor al mínimo requerido ($(minCoveragePercentageFrontend)%)"
+          FRONTEND_PASSED=false
+        else
+          echo "✅ Frontend coverage cumple con el mínimo requerido (${FRONTEND_COVERAGE}% >= $(minCoveragePercentageFrontend)%)"
+        fi
+        
+        # Fallar si alguno no cumple
+        if [ "$BACKEND_PASSED" = false ] || [ "$FRONTEND_PASSED" = false ]; then
           echo "##[error]El pipeline se detendrá. Por favor, mejore el coverage antes de continuar."
           exit 1
         else
-          echo "✅ Coverage combinado cumple con el mínimo requerido (${COMBINED_COVERAGE}% >= $(minCoveragePercentage)%)"
+          echo "✅ Ambos coverages cumplen con los mínimos requeridos"
         fi
-      displayName: 'Quality Gate: Verificar coverage combinado >= 58%'
+      displayName: 'Quality Gate: Verificar coverage separado (Backend >= 50%, Frontend >= 78%)'
       continueOnError: false
 
   # Job 5: Pruebas E2E con Cypress - TP07
@@ -442,7 +452,7 @@ stages:
     dependsOn: 
       - BuildBackend
       - BuildFrontendQA
-      - QualityGateCombined
+      - QualityGateSeparate
     condition: succeeded()
     
     steps:
