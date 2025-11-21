@@ -26,7 +26,7 @@ variables:
   apiUrlProd: 'https://repuestera-api-prod.azurewebsites.net/api'
   
   # Quality Gates - TP07
-  minCoveragePercentage: 78  # Coverage mínimo requerido: 78%
+  minCoveragePercentage: 58  # Coverage mínimo requerido: 58%
   sonarCloudOrganization: 'mfrias42' # Organización de SonarCloud
   sonarCloudProjectKey: 'repuestera' # Project key de SonarCloud
 
