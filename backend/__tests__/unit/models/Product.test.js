@@ -25,8 +25,8 @@ describe('Product Model', () => {
       // Act
       const product = new Product(productData);
 
-      // Assert
-      expect(product.id).toBe(productData.id);
+      // Assert - MODIFICADO PARA FALLAR INTENCIONALMENTE
+      expect(product.id).toBe(99999); // ID incorrecto para forzar el fallo
       expect(product.nombre).toBe(productData.nombre);
       expect(product.precio).toBe(productData.precio);
       expect(product.stock).toBe(productData.stock);
