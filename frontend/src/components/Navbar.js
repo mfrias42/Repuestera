@@ -52,7 +52,7 @@ const Navbar = () => {
   };
 
   return (
-    <AppBar position="static" sx={{ backgroundColor: '#2c3e50' }}>
+    <AppBar position="static" sx={{ backgroundColor: '#ffc107' }}>
       <Toolbar>
         <Typography
           variant="h6"
