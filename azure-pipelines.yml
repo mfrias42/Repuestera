@@ -156,12 +156,13 @@ stages:
       displayName: 'Publicar coverage del backend'
       condition: always()
 
-  # Job 2: Frontend QA - Se ejecuta en paralelo con Backend (tests + build con URL de QA)
+  # Job 2: Frontend QA - Se ejecuta después de Backend (tests + build con URL de QA)
   - job: BuildFrontendQA
     displayName: 'Construir Frontend para QA'
     pool:
       vmImage: 'ubuntu-latest'
-    # No depende de BuildBackend porque son independientes
+    dependsOn: BuildBackend
+    condition: succeeded()
     
     steps:
     - task: NodeTool@0
@@ -296,14 +297,15 @@ stages:
       displayName: 'Publicar coverage del frontend'
       condition: always()
 
-  # Job 3: Frontend Producción - Se ejecuta en paralelo (solo build con URL de producción)
+  # Job 3: Frontend Producción - Se ejecuta después de Backend (solo build con URL de producción)
   # NOTA: Builds separados son NECESARIOS porque el frontend necesita diferentes URLs de API
   # en tiempo de compilación (REACT_APP_API_URL se inyecta en el código durante el build)
   - job: BuildFrontendProd
     displayName: 'Construir Frontend para Producción'
     pool:
       vmImage: 'ubuntu-latest'
-    # No depende de otros jobs, puede ejecutarse en paralelo
+    dependsOn: BuildBackend
+    condition: succeeded()
     
     steps:
     - task: NodeTool@0
@@ -340,127 +342,6 @@ stages:
         publishLocation: 'Container'
       displayName: 'Publicar artefacto del frontend Producción'
 
-
-  # Job 5: Pruebas E2E con Cypress - TP07
-  - job: E2ETests
-    displayName: 'Pruebas E2E con Cypress'
-    pool:
-      vmImage: 'ubuntu-latest'
-    dependsOn: 
-      - BuildBackend
-      - BuildFrontendQA
-    condition: succeeded()
-    
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: $(nodeVersion)
-      displayName: 'Instalar Node.js $(nodeVersion)'
-
-    # Caché de dependencias npm para acelerar builds
-    - task: CacheBeta@1
-      inputs:
-        key: npm | $(Agent.OS) | frontend/package-lock.json
-        path: /home/vsts/.npm
-        restoreKeys: |
-          npm | $(Agent.OS)
-      displayName: 'Cache npm dependencies'
-
-    # Caché de Cypress binaries para acelerar instalación
-    - task: CacheBeta@1
-      inputs:
-        key: cy | $(Agent.OS) | frontend/package-lock.json
-        path: /home/vsts/.cache/Cypress
-        restoreKeys: |
-          cy | $(Agent.OS)
-      displayName: 'Cache Cypress binaries'
-
-    - script: |
-        cd frontend
-        npm install
-      displayName: 'Instalar dependencias del frontend'
-
-    - script: |
-        cd backend
-        npm install --production=false
-      displayName: 'Instalar dependencias del backend'
-
-    - script: |
-        # Iniciar backend en background
-        cd backend
-        npm start > backend.log 2>&1 &
-        BACKEND_PID=$!
-        echo "Backend iniciado con PID: $BACKEND_PID"
-        echo "Esperando a que el backend esté listo..."
-        for i in {1..30}; do
-          if curl -f http://localhost:8000/api/health > /dev/null 2>&1; then
-            echo "✅ Backend está listo"
-            break
-          fi
-          if [ $i -eq 30 ]; then
-            echo "❌ Backend no respondió después de 30 intentos"
-            cat backend.log
-            exit 1
-          fi
-          sleep 2
-        done
-      displayName: 'Iniciar backend para pruebas E2E'
-      continueOnError: false
-
-    - script: |
-        # Iniciar frontend en background
-        cd frontend
-        BROWSER=none npm start > frontend.log 2>&1 &
-        FRONTEND_PID=$!
-        echo "Frontend iniciado con PID: $FRONTEND_PID"
-        echo "Esperando a que el frontend esté listo..."
-        for i in {1..30}; do
-          if curl -f http://localhost:3000 > /dev/null 2>&1; then
-            echo "✅ Frontend está listo"
-            break
-          fi
-          if [ $i -eq 30 ]; then
-            echo "❌ Frontend no respondió después de 30 intentos"
-            cat frontend.log
-            exit 1
-          fi
-          sleep 2
-        done
-      displayName: 'Iniciar frontend para pruebas E2E'
-      continueOnError: false
-
-    - script: |
-        cd frontend
-        mkdir -p cypress/results
-        # Verificar que cypress.config.js existe
-        if [ ! -f "cypress.config.js" ]; then
-          echo "##[error]No se encontró cypress.config.js en frontend/"
-          ls -la
-          exit 1
-        fi
-        # Verificar que backend y frontend están corriendo
-        echo "Verificando que backend está corriendo..."
-        curl -f http://localhost:8000/api/health || echo "⚠️ Backend puede no estar listo"
-        echo "Verificando que frontend está corriendo..."
-        curl -f http://localhost:3000 || echo "⚠️ Frontend puede no estar listo"
-        # Ejecutar Cypress con recording para Cypress Cloud
-        # También genera reporte JUnit para Azure DevOps
-        npx cypress run --record --key cedda1b7-3a98-4010-abf8-8b18c325d78f --ci-build-id $(Build.BuildNumber) --reporter junit --reporter-options 'mochaFile=cypress/results/results.xml' || echo "⚠️ Algunos tests fallaron, pero continuando..."
-      displayName: 'Ejecutar pruebas E2E con Cypress (Cloud + Azure DevOps)'
-      continueOnError: true
-      env:
-        CYPRESS_baseUrl: 'http://localhost:3000'
-        CYPRESS_apiUrl: 'http://localhost:8000/api'
-
-    - task: PublishTestResults@2
-      condition: always()
-      inputs:
-        testResultsFormat: 'JUnit'
-        testResultsFiles: 'cypress/results/*.xml'
-        testRunTitle: 'Cypress E2E Tests'
-        failTaskOnFailedTests: true
-      displayName: 'Publicar resultados de pruebas E2E'
-
 # ============================================================================
 # STAGE QA - Despliegue Automático para Testing
 # ============================================================================
@@ -486,13 +367,10 @@ stages:
 
 - stage: DeployQA
   displayName: '🧪 QA Environment'
-  dependsOn: 
-    - Build
-    - QualityGates
+  dependsOn: QualityGates
   condition: |
     and(
       succeeded(),
-      eq(dependencies.Build.result, 'Succeeded'),
       eq(dependencies.QualityGates.result, 'Succeeded')
     )
   
@@ -636,18 +514,95 @@ stages:
             displayName: 'Configure QA Frontend Settings'
 
 # ============================================================================
+# STAGE E2E TESTS - Pruebas E2E después del deploy de QA
+# ============================================================================
+- stage: E2ETests
+  displayName: '🧪 Pruebas E2E con Cypress'
+  dependsOn: DeployQA
+  condition: |
+    and(
+      succeeded(),
+      eq(dependencies.DeployQA.result, 'Succeeded')
+    )
+  
+  jobs:
+  - job: RunE2ETests
+    displayName: 'Ejecutar Pruebas E2E con Cypress'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: $(nodeVersion)
+      displayName: 'Instalar Node.js $(nodeVersion)'
+
+    # Caché de dependencias npm para acelerar builds
+    - task: CacheBeta@1
+      inputs:
+        key: npm | $(Agent.OS) | frontend/package-lock.json
+        path: /home/vsts/.npm
+        restoreKeys: |
+          npm | $(Agent.OS)
+      displayName: 'Cache npm dependencies'
+
+    # Caché de Cypress binaries para acelerar instalación
+    - task: CacheBeta@1
+      inputs:
+        key: cy | $(Agent.OS) | frontend/package-lock.json
+        path: /home/vsts/.cache/Cypress
+        restoreKeys: |
+          cy | $(Agent.OS)
+      displayName: 'Cache Cypress binaries'
+
+    - script: |
+        cd frontend
+        npm install
+      displayName: 'Instalar dependencias del frontend'
+
+    - script: |
+        cd frontend
+        mkdir -p cypress/results
+        # Verificar que cypress.config.js existe
+        if [ ! -f "cypress.config.js" ]; then
+          echo "##[error]No se encontró cypress.config.js en frontend/"
+          ls -la
+          exit 1
+        fi
+        # Verificar que backend y frontend de QA están disponibles
+        echo "Verificando que backend de QA está disponible..."
+        curl -f $(apiUrlQA)/health || echo "⚠️ Backend de QA puede no estar listo"
+        echo "Verificando que frontend de QA está disponible..."
+        curl -f https://$(webAppNameFrontendQA).azurewebsites.net || echo "⚠️ Frontend de QA puede no estar listo"
+        # Ejecutar Cypress con recording para Cypress Cloud
+        # También genera reporte JUnit para Azure DevOps
+        # Usar URLs de QA desplegadas en lugar de localhost
+        npx cypress run --record --key cedda1b7-3a98-4010-abf8-8b18c325d78f --ci-build-id $(Build.BuildNumber) --reporter junit --reporter-options 'mochaFile=cypress/results/results.xml' || echo "⚠️ Algunos tests fallaron, pero continuando..."
+      displayName: 'Ejecutar pruebas E2E con Cypress (Cloud + Azure DevOps)'
+      continueOnError: true
+      env:
+        CYPRESS_baseUrl: 'https://$(webAppNameFrontendQA).azurewebsites.net'
+        CYPRESS_apiUrl: '$(apiUrlQA)'
+
+    - task: PublishTestResults@2
+      condition: always()
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: 'cypress/results/*.xml'
+        testRunTitle: 'Cypress E2E Tests'
+        failTaskOnFailedTests: true
+      displayName: 'Publicar resultados de pruebas E2E'
+
+# ============================================================================
 # STAGE PRODUCTION - Despliegue con Aprobación Manual
 # ============================================================================
 - stage: DeployProduction
   displayName: '🚀 Production Environment'
-  dependsOn: 
-    - DeployQA
-    - QualityGates
+  dependsOn: E2ETests
   condition: |
     and(
       succeeded(),
-      eq(dependencies.DeployQA.result, 'Succeeded'),
-      eq(dependencies.QualityGates.result, 'Succeeded')
+      eq(dependencies.E2ETests.result, 'Succeeded')
     )
   
   variables:
