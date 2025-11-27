@@ -221,9 +221,8 @@ describe('Products Component', () => {
     
     renderWithProviders(<Products />);
     
-    // MODIFICADO PARA FALLAR INTENCIONALMENTE - esperando precio incorrecto
     await waitFor(() => {
-      expect(screen.getByText('$99999.99')).toBeInTheDocument(); // Precio incorrecto para forzar el fallo
+      expect(screen.getByText(/1.500/i)).toBeInTheDocument();
     });
     
     await waitFor(() => {
