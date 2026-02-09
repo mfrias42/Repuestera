@@ -283,10 +283,3 @@ Códigos de estado HTTP utilizados:
 4. Push a la rama (`git push origin feature/AmazingFeature`)
 5. Abrir un Pull Request
 
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
-
-## 📞 Soporte
-
-Para soporte o preguntas, contactar a [tu-email@ejemplo.com](mailto:tu-email@ejemplo.com)
