@@ -56,8 +56,16 @@ async function testConnection() {
       NODE_ENV: process.env.NODE_ENV || 'NO DEFINIDO'
     });
     
+    // Primero conectar sin base de datos para crearla si no existe
+    const tempConfig = { ...config, database: undefined };
+    const tempPool = mysql.createPool(tempConfig);
+    const dbName = process.env.DB_NAME || 'repuestera_db';
+    await tempPool.execute(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+    console.log(`✅ Base de datos '${dbName}' verificada/creada`);
+    await tempPool.end();
+
     const connection = await getConnection();
-    const [rows] = await connection.execute('SELECT 1 as test, DATABASE() as current_db, USER() as current_user');
+    const [rows] = await connection.execute('SELECT 1 as test, DATABASE() as current_db, USER() as `current_user`');
     console.log('✅ Conexión a MySQL Flexible Server verificada correctamente');
     console.log('✅ Base de datos actual:', rows[0].current_db);
     console.log('✅ Usuario actual:', rows[0].current_user);

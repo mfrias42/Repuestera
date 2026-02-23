@@ -132,6 +132,9 @@ const allowedOrigins = [
   // URLs de Azure App Service - Producción separada
   'http://repuestera-web-prod.azurewebsites.net',
   'https://repuestera-web-prod.azurewebsites.net',
+  // URLs nuevas - migración nueva cuenta Azure
+  'https://repuestera-web-qa-2-bqaybwanada3f8g2.brazilsouth-01.azurewebsites.net',
+  'https://repuestera-web-prod-2-fhc5avbpg4etazej.brazilsouth-01.azurewebsites.net',
   // URLs adicionales para desarrollo
   'http://localhost:8080',
   'http://localhost:8000'
