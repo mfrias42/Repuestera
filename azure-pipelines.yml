@@ -10,6 +10,7 @@ variables:
   # Configuración de Azure
   azureSubscription: 'Azure-Service-Connection'
   resourceGroupName: 'rg-repuestera-qa'
+  resourceGroupNameProd: 'rg-repuestera-prod'
   location: 'Brazil South'
   
   # Configuración de Node.js
@@ -628,7 +629,7 @@ stages:
               azureSubscription: $(azureSubscription)
               appType: 'webAppLinux'
               appName: $(webAppNameBackendProd)
-              resourceGroupName: $(resourceGroupName)
+              resourceGroupName: $(resourceGroupNameProd)
               package: '$(Pipeline.Workspace)/backend-drop/backend.zip'
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npm start'
@@ -638,7 +639,7 @@ stages:
             inputs:
               azureSubscription: $(azureSubscription)
               appName: $(webAppNameBackendProd)
-              resourceGroupName: $(resourceGroupName)
+              resourceGroupName: $(resourceGroupNameProd)
               appSettings: |
                 [
                   {
@@ -718,7 +719,7 @@ stages:
               azureSubscription: $(azureSubscription)
               appType: 'webAppLinux'
               appName: $(webAppNameFrontendProd)
-              resourceGroupName: $(resourceGroupName)
+              resourceGroupName: $(resourceGroupNameProd)
               package: '$(Pipeline.Workspace)/frontend-prod-drop/frontend-prod.zip'
               runtimeStack: 'NODE|20-lts'
               startUpCommand: 'npx serve -s . -l 8080'
@@ -728,7 +729,7 @@ stages:
             inputs:
               azureSubscription: $(azureSubscription)
               appName: $(webAppNameFrontendProd)
-              resourceGroupName: $(resourceGroupName)
+              resourceGroupName: $(resourceGroupNameProd)
               appSettings: |
                 [
                   {
