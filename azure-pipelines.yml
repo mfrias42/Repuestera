@@ -104,7 +104,7 @@ stages:
       displayName: 'Calcular coverage backend'
       continueOnError: false
     
-    - task: SonarCloudPrepare@1
+    - task: SonarCloudPrepare@2
       condition: always()
       continueOnError: true
       inputs:
@@ -121,12 +121,12 @@ stages:
           sonar.test.exclusions=**/node_modules/**
       displayName: 'SonarCloud: Preparar análisis backend'
 
-    - task: SonarCloudAnalyze@1
+    - task: SonarCloudAnalyze@2
       condition: always()
       continueOnError: true
       displayName: 'SonarCloud: Ejecutar análisis backend'
 
-    - task: SonarCloudPublish@1
+    - task: SonarCloudPublish@2
       condition: always()
       continueOnError: true
       inputs:
@@ -237,7 +237,7 @@ stages:
       displayName: 'Quality Gate: Verificar coverage frontend >= 78%'
       continueOnError: false
 
-    - task: SonarCloudPrepare@1
+    - task: SonarCloudPrepare@2
       condition: always()
       continueOnError: true
       inputs:
@@ -254,12 +254,12 @@ stages:
           sonar.test.exclusions=**/node_modules/**
       displayName: 'SonarCloud: Preparar análisis frontend'
 
-    - task: SonarCloudAnalyze@1
+    - task: SonarCloudAnalyze@2
       condition: always()
       continueOnError: true
       displayName: 'SonarCloud: Ejecutar análisis frontend'
     
-    - task: SonarCloudPublish@1
+    - task: SonarCloudPublish@2
       condition: always()
       continueOnError: true
       inputs:
