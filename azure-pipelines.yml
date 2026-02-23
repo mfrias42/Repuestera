@@ -16,19 +16,19 @@ variables:
   nodeVersion: '20.x'
   
   # Variables QA
-  webAppNameBackendQA: 'repuestera-api-qa'
-  webAppNameFrontendQA: 'repuestera-web-qa'
-  apiUrlQA: 'https://repuestera-api-qa.azurewebsites.net/api'
+  webAppNameBackendQA: 'repuestera-api-qa-2'
+  webAppNameFrontendQA: 'repuestera-web-qa-2'
+  apiUrlQA: 'https://repuestera-api-qa-2-ece9eqd3g0h4gkem.brazilsouth-01.azurewebsites.net/api'
   
   # Variables Producción
-  webAppNameBackendProd: 'repuestera-api-prod'
-  webAppNameFrontendProd: 'repuestera-web-prod'
-  apiUrlProd: 'https://repuestera-api-prod.azurewebsites.net/api'
+  webAppNameBackendProd: 'repuestera-api-prod-2'
+  webAppNameFrontendProd: 'repuestera-web-prod-2'
+  apiUrlProd: 'https://repuestera-api-prod-2-h9f0c3bvfqaggwde.brazilsouth-01.azurewebsites.net/api'
   
   # Quality Gates - TP07
   minCoveragePercentage: 78  # Coverage mínimo requerido: 78%
-  sonarCloudOrganization: 'mfrias42' # Organización de SonarCloud
-  sonarCloudProjectKey: 'repuestera' # Project key de SonarCloud
+  sonarCloudOrganization: 'martubecerra' # Organización de SonarCloud
+  sonarCloudProjectKey: 'martubecerra_repuestera' # Project key de SonarCloud
 
 stages:
 - stage: Build
@@ -421,17 +421,17 @@ stages:
                   },
                   {
                     "name": "DB_HOST",
-                    "value": "manufrias.mysql.database.azure.com",
+                    "value": "repuestera-mysql-mb.mysql.database.azure.com",
                     "slotSetting": false
                   },
                   {
                     "name": "DB_USER",
-                    "value": "A",
+                    "value": "adminrepuestera",
                     "slotSetting": false
                   },
                   {
                     "name": "DB_PASSWORD",
-                    "value": "4286Pka1#",
+                    "value": "Repuestera2026#",
                     "slotSetting": false
                   },
                   {
@@ -663,17 +663,17 @@ stages:
                   },
                   {
                     "name": "DB_HOST",
-                    "value": "manufrias-prod.mysql.database.azure.com",
+                    "value": "repuestera-mysql-prod.mysql.database.azure.com",
                     "slotSetting": false
                   },
                   {
                     "name": "DB_USER",
-                    "value": "A",
+                    "value": "adminrepuestera",
                     "slotSetting": false
                   },
                   {
                     "name": "DB_PASSWORD",
-                    "value": "4286Pk1#",
+                    "value": "Repuestera2026#",
                     "slotSetting": false
                   },
                   {
